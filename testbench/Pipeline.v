@@ -1,4 +1,5 @@
-`timescale 1 ns/ 1 ns
+`include "IF.v"
+`include "mem.v"
 module Pipeline (input clk);
  
 wire clk;
@@ -12,7 +13,7 @@ reg RW;
      
      IF                IF1(.clk(clk),.pc_current(pc_current),.Instruction(Instruction));
      
-     mem               MEM1(.Am1(Am1),.Am2(Am2),.Dm3(Dm3),.RW(RW),.Dm1(Dm1),.Dm2(Dm2));                
+     mem               MEM1();                
                  
                      
                     
