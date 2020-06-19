@@ -11,22 +11,20 @@
 
 module execute (input clk,
                 input resetb,
-                input[31:0]     reg_rdata1,
-                input[31:0]     reg_rdata2,
                 input           ex_imm_sel,
                 input[31:0]     ex_imm,
-                input[31:0]     fetch_pc,
                 input           ex_memwr,
+                input           ex_mem2reg,
                 input           ex_jal,
                 input           ex_jalr,
                 input           ex_lui,
                 input           ex_auipc,
                 input           ex_csr,
                 input           ex_alu,
-                input           ex_alu_op,
+                input[2:0]      ex_alu_op,
                 input           ex_subtype,
                 input[31:0]     ex_pc,
-                input[31:0]     ex_csr_read,
+                
 
                 // Outputs to Writeback Stage
 
@@ -44,12 +42,39 @@ module execute (input clk,
                 output[31:0]    wb_wdata
 
 );
+    
+    reg             [31:0]  ex_csr_read;        //should be assigned a value for testing ..changes in writeback stage
+    reg             [31:0]  fetch_pc;           //should be assigned a value for testing ..changes in writeback stage
+    wire            [31:0]  reg_rdata1;         //should be assigned a value for testing ..changes in writeback stage
+    wire            [31:0]  reg_rdata2;         //should be assigned a value for testing ..changes in writeback stage
+    
 
     wire            [32: 0] result_subs;        //Substraction Signed
     wire            [32: 0] result_subu;        //Substraction Unsigned
     reg             [31: 0] result;
     reg             [31: 0] next_pc;
     wire            [31: 0] wr_addr;
+
+
+    // data memory wires 
+    wire dmem_waddr ;
+    wire dmem_raddr ;
+    wire dmem_rready;
+    wire dmem_wready;
+    wire dmem_wdata ;
+    wire dmem_wstrb ;
+
+
+// Assigning values to Data memory variables 
+assign dmem_waddr           = wb_waddr;
+assign dmem_raddr           = alu_op1 + ex_imm;
+assign dmem_rready          = ex_mem2reg;
+assign dmem_wready          = wb_memwr;
+assign dmem_wdata           = wb_wdata;
+assign dmem_wstrb           = wb_wstrb;
+
+
+
 
 // Selecting the first and second operands of ALU unit
 
