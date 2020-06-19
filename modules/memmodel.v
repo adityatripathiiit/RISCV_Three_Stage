@@ -32,6 +32,7 @@ initial begin
     end
 
     $readmemh(FILE, mem, 0, SIZE/4-1);
+    $display("inst memory : %h",mem[radr][8*0+7:8*0]);
 end
 
 always @(posedge clk) begin
