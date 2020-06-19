@@ -74,6 +74,7 @@ end
 always @* begin
     imm                     = 32'h0;
     illegal_inst            = 1'b0;
+    // $monitor("Operation type: %b",inst[`OPCODE]); 
     case(inst[`OPCODE])
         OP_AUIPC : imm      = {inst[31:12], 12'd0}; // U-type
         OP_LUI   : imm      = {inst[31:12], 12'd0}; // U-type
@@ -138,6 +139,8 @@ always @(posedge clk or negedge resetb) begin
     end
     if_pc <= if_pc+4;
 end
+initial
+      $monitor("Operation type: %s",inst[`OPCODE]);
 
 endmodule
 
