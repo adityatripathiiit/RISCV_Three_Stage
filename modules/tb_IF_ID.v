@@ -41,9 +41,9 @@ always @(posedge clk or negedge resetb) begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
     end else begin
-        next_pc     <= fetch_decode.if_pc;
+        next_pc     <= IF_ID.if_pc;
 
-        if (next_pc == fetch_decode.if_pc)
+        if (next_pc == IF_ID.if_pc)
             count   <= count + 1;
         else
             count   <= 8'h0;
@@ -63,7 +63,7 @@ always @(posedge clk) begin
     end
 end
 
-fetch_decode IF_ID(
+IF_ID IF_ID(
     .clk        (clk),
     .resetb     (resetb),
     .exception  (exception),
@@ -71,7 +71,7 @@ fetch_decode IF_ID(
     .imem_ready (imem_ready),
     .imem_rdata (imem_rdata),
     .imem_valid (imem_valid),
-    .imem_addr  (imem_addr),
+    .imem_addr  (imem_addr)
 );
 
 

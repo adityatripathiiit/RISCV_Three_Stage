@@ -3,7 +3,7 @@
 
 module memmodel # (
     parameter SIZE  = 4096,
-    parameter FILE  = "memory.bin"
+    parameter FILE  = "../memory_data/imem.hex"
 ) (
     input               clk,
 

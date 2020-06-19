@@ -16,7 +16,7 @@ module IF_ID(
     output                  imem_ready,
     input           [31: 0] imem_rdata,
     input                   imem_valid,
-    output          [31: 0] imem_addr,
+    output          [31: 0] imem_addr
 );
 
 `include "opcode.vh"
@@ -45,7 +45,7 @@ reg                     ex_auipc;
 reg                     ex_jal;
 reg                     ex_jalr;
 reg                     ex_branch;
-
+wire reg               [31:0] inst;
 
 // reading the instructions and assigning the instruction to inst
 
@@ -73,7 +73,6 @@ end
 always @* begin
     imm                     = 32'h0;
     illegal_inst            = 1'b0;
-    $display(isnt);
     case(inst[`OPCODE])
         OP_AUIPC : imm      = {inst[31:12], 12'd0}; // U-type
         OP_LUI   : imm      = {inst[31:12], 12'd0}; // U-type
@@ -88,8 +87,8 @@ always @* begin
         OP_SYSTEM: imm      = {20'h0, inst[31:20]};
         default: begin // illegal instruction
             illegal_inst    = 1'b1;
-            $display("Illegal instruction");
-            $finish(2);
+            // $display("Illegal instruction");
+            // $finish(2);
         end
     endcase
 end
@@ -136,7 +135,7 @@ always @(posedge clk or negedge resetb) begin
         ex_branch           <= inst[`OPCODE] == OP_BRANCH;
         ex_pc               <= if_pc;
     end
-    is_pc = is_pc+4;
+    if_pc = if_pc+4;
 end
 
 endmodule
