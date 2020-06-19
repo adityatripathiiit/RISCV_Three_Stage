@@ -31,12 +31,10 @@ end
                      end
                         
                      pc_current = pc_temp - 4;
-                     
-                     $display("%b", Instruction);
+                     $display("%h", Instruction);
                      
                      end
 
 
                      
 endmodule
-

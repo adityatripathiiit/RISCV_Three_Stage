@@ -14,11 +14,7 @@ reg RW;
      IF                IF1(.clk(clk),.pc_current(pc_current),.Instruction(Instruction));
      
      mem               MEM1();                
-                 
-                     
-                    
-                     
- endmodule                     
+endmodule              
                    
                    
                    
