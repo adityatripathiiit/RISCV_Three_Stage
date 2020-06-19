@@ -8,13 +8,16 @@ module testbench();
     wire            exception;
 
     wire            imem_ready;
-    wire    [31: 0] imem_rdata;
+    wire reg   [31: 0] imem_rdata;
     wire            imem_valid;
     wire    [31: 0] imem_addr;
 
     // pc counter and checker
     reg     [31: 0] next_pc;
     reg     [ 7: 0] count;
+
+initial
+      $monitor("inst=%h",imem_rdata);
 
 
 initial begin
@@ -81,10 +84,10 @@ IF_ID IF_ID(
     ) imem (
         .clk   (clk),
 
-        .rready(imem_ready),
+        .rready(1'b1),
         .wready(1'b0),
         .rdata (imem_rdata),
-        .raddr (imem_addr[31:2]),
+        .raddr (IF_ID.if_pc[31:2]),
         .waddr (30'h0),
         .wdata (32'h0),
         .wstrb (4'h0)

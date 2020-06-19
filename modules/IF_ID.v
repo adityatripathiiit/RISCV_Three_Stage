@@ -46,6 +46,7 @@ reg                     ex_jal;
 reg                     ex_jalr;
 reg                     ex_branch;
 wire reg               [31:0] inst;
+initial if_pc = 0;
 
 // reading the instructions and assigning the instruction to inst
 
@@ -135,7 +136,7 @@ always @(posedge clk or negedge resetb) begin
         ex_branch           <= inst[`OPCODE] == OP_BRANCH;
         ex_pc               <= if_pc;
     end
-    if_pc = if_pc+4;
+    if_pc <= if_pc+4;
 end
 
 endmodule
