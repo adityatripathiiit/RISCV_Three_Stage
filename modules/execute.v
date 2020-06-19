@@ -7,7 +7,7 @@
 // Stage 2: Execute
 ////////////////////////////////////////////////////////////
 
-`include "opcode.vh"
+// `include "opcode.vh"
 
 module execute (input clk,
                 input resetb,
