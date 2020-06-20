@@ -28,19 +28,18 @@ module testbench();
 
 
     // execute stage wires
-    wire    [31:0]    wb_result,
-    wire              wb_memwr,
-    wire              wb_alu2reg,
-    wire    [4:0]     wb_dst_sel,
-    wire              wb_mem2reg,
-    wire    [1:0]     wb_raddr,
-    wire    [2:0]     wb_aluop,
-    //wire          wb_branch,
-    //wire          wb_branch_nxt,
-    wire    [31:0]    wb_waddr,
-    wire    [3:0]     wb_wstrb,
-    wire    [31:0]    wb_wdata
-
+    wire   [31:0]    wb_result;
+    wire              wb_memwr;
+    wire              wb_alu2reg;
+    wire    [4:0]     wb_dst_sel;
+    wire              wb_mem2reg;
+    wire    [1:0]     wb_raddr;
+    wire    [2:0]     wb_alu_op;
+    //wire          wb_branch;
+    //wire          wb_branch_nxt;
+    wire    [31:0]    wb_waddr;
+    wire    [3:0]     wb_wstrb;
+    wire    [31:0]    wb_wdata;
 
     // pc counter and checker
     reg     [31: 0] next_pc;
@@ -50,10 +49,11 @@ assign dmem_rvalid  = 1'b1;
 assign dmem_wvalid  = 1'b1;
 assign imem_valid   = 1'b1;
 
-initial
-      $monitor("inst=%h",imem_rdata);
-      $monitor("result=%d",wb_result);
-
+// initial
+// begin
+//     //   $monitor("inst=%h",imem_rdata);
+//       $monitor("result=%b",execute.dmem_raddr);
+// end
 
 initial begin
 
@@ -119,12 +119,14 @@ IF_ID IF_ID(
 );
 
 
+
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Execute stage
 //////////////////////////////////////////////////////////
 execute execute(
     .clk        (clk),
     .resetb     (resetb),
+    .dmem_rdata(dmem_rdata),
     .ex_imm_sel(IF_ID.ex_imm_sel),
     .ex_imm(IF_ID.ex_imm),
     .ex_memwr(IF_ID.ex_memwr),
@@ -138,18 +140,19 @@ execute execute(
     .ex_alu_op(IF_ID.ex_alu_op),
     .ex_subtype(IF_ID.ex_subtype),
     .ex_pc(IF_ID.ex_pc),
+    .ex_dst_sel(IF_ID.ex_dst_sel),
     .wb_result(wb_result),
     .wb_memwr(wb_memwr),
     .wb_alu2reg(wb_alu2reg),
     .wb_dst_sel(wb_dst_sel),
     .wb_mem2reg(wb_mem2reg),
     .wb_raddr(wb_raddr),
-    .wb_aluop(wb_aluop),
-    .wb_branch(wb_branch),
-    .wb_branch_nxt(wb_branch_nxt),
+    .wb_alu_op(wb_alu_op),
+    //.wb_branch(wb_branch),
+    //.wb_branch_nxt(wb_branch_nxt),
     .wb_waddr(wb_waddr),
     .wb_wstrb(wb_wstrb),
-    .wb_wdat(wb_wdat)
+    .wb_wdata(wb_wdata)
 );
 
 
@@ -175,7 +178,7 @@ execute execute(
 
 
 ///////////////////////////////////////////////////////////
-/////// Instanatiate Data memory
+/////// Instantiate Data memory
 //////////////////////////////////////////////////////////
      memmodel # (
         .SIZE(DRAMSIZE),
@@ -184,7 +187,7 @@ execute execute(
         .clk   (clk),
         .rready(execute.dmem_rready),
         .wready(execute.dmem_wready),
-        .rdata (execute.dmem_rdata),
+        .rdata (dmem_rdata),
         .raddr (execute.dmem_raddr[31:2]),
         .waddr (execute.dmem_waddr[31:2]),
         .wdata (execute.dmem_wdata),
@@ -218,56 +221,56 @@ always @(posedge clk) begin
 end
 
 
-`ifdef TRACE
-    integer         fp;
+// `ifdef TRACE
+//     integer         fp;
 
-    reg [7*8:1] regname;
+//     reg [7*8:1] regname;
 
-initial begin
-    if ($test$plusargs("trace")) begin
-        fp = $fopen("trace.log", "w");
-    end
-end
+// initial begin
+//     if ($test$plusargs("trace")) begin
+//         fp = $fopen("trace.log", "w");
+//     end
+// end
 
-always @* begin
-    case(wb_dst_sel)
-        'd0: regname = "zero";
-        'd1: regname = "ra";
-        'd2: regname = "sp";
-        'd3: regname = "gp";
-        'd4: regname = "tp";
-        'd5: regname = "t0";
-        'd6: regname = "t1";
-        'd7: regname = "t2";
-        'd8: regname = "s0(fp)";
-        'd9: regname = "s1";
-        'd10: regname = "a0";
-        'd11: regname = "a1";
-        'd12: regname = "a2";
-        'd13: regname = "a3";
-        'd14: regname = "a4";
-        'd15: regname = "a5";
-        'd16: regname = "a6";
-        'd17: regname = "a7";
-        'd18: regname = "s2";
-        'd19: regname = "s3";
-        'd20: regname = "s4";
-        'd21: regname = "s5";
-        'd22: regname = "s6";
-        'd23: regname = "s7";
-        'd24: regname = "s8";
-        'd25: regname = "s9";
-        'd26: regname = "s10";
-        'd27: regname = "s11";
-        'd28: regname = "t3";
-        'd29: regname = "t4";
-        'd30: regname = "t5";
-        'd31: regname = "t6";
-        default: regname = "xx";
-    endcase
-end
+// always @* begin
+//     case(wb_dst_sel)
+//         'd0: regname = "zero";
+//         'd1: regname = "ra";
+//         'd2: regname = "sp";
+//         'd3: regname = "gp";
+//         'd4: regname = "tp";
+//         'd5: regname = "t0";
+//         'd6: regname = "t1";
+//         'd7: regname = "t2";
+//         'd8: regname = "s0(fp)";
+//         'd9: regname = "s1";
+//         'd10: regname = "a0";
+//         'd11: regname = "a1";
+//         'd12: regname = "a2";
+//         'd13: regname = "a3";
+//         'd14: regname = "a4";
+//         'd15: regname = "a5";
+//         'd16: regname = "a6";
+//         'd17: regname = "a7";
+//         'd18: regname = "s2";
+//         'd19: regname = "s3";
+//         'd20: regname = "s4";
+//         'd21: regname = "s5";
+//         'd22: regname = "s6";
+//         'd23: regname = "s7";
+//         'd24: regname = "s8";
+//         'd25: regname = "s9";
+//         'd26: regname = "s10";
+//         'd27: regname = "s11";
+//         'd28: regname = "t3";
+//         'd29: regname = "t4";
+//         'd30: regname = "t5";
+//         'd31: regname = "t6";
+//         default: regname = "xx";
+//     endcase
+// end
 
 
-
+// `endif
 
 endmodule

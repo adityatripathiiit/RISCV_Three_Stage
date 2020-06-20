@@ -1,6 +1,3 @@
-// Three pipeline stage RV32I RISCV processor
-// Written by Kuoping Hsu, 2020, MIT license
-
 `define OPCODE      6:0
 `define FUNC3       14:12
 `define SUBTYPE     30

@@ -34,7 +34,7 @@ reg                     ex_imm_sel;
 reg             [ 4: 0] ex_src1_sel;
 reg             [ 4: 0] ex_src2_sel;
 reg             [ 4: 0] ex_dst_sel;
-reg             [ 2: 0] ex_alu_op;
+reg            [ 2: 0] ex_alu_op;
 reg                     ex_subtype;
 reg                     ex_memwr;
 reg                     ex_mem2reg;
@@ -45,8 +45,15 @@ reg                     ex_auipc;
 reg                     ex_jal;
 reg                     ex_jalr;
 reg                     ex_branch;
-wire reg               [31:0] inst;
+wire             [31:0] inst;
 initial if_pc = 0;
+
+
+initial
+begin
+      $monitor("inst_inside=%h",imm);
+    //   $monitor("result=%d",dmem_rready);
+end
 
 // reading the instructions and assigning the instruction to inst
 
@@ -114,7 +121,9 @@ always @(posedge clk or negedge resetb) begin
         ex_jalr             <= 1'b0;
         ex_branch           <= 1'b0;
         ex_pc               <= RESETVEC;
-    end else begin  // else take the values from the IF stage and decode it to pass values to corresponding wires
+    end else 
+    // $display("");
+    begin  // else take the values from the IF stage and decode it to pass values to corresponding wires
         ex_imm              <= imm;
         ex_imm_sel          <= (inst[`OPCODE] == OP_JALR  ) ||
                                (inst[`OPCODE] == OP_LOAD  ) ||

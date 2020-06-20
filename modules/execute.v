@@ -9,7 +9,28 @@
 
 // `include "opcode.vh"
 
-module execute (input clk,
+
+
+
+
+module execute #(parameter  [ 2: 0] OP_ADD     = 3'b000,    // inst[30] == 0: ADD, inst[31] == 1: SUB
+                 parameter  [ 2: 0]   OP_SLL     = 3'b001,
+                 parameter  [ 2: 0]   OP_SLT     = 3'b010,
+                 parameter  [ 2: 0]   OP_SLTU    = 3'b011,
+                 parameter  [ 2: 0]   OP_XOR     = 3'b100,
+                 parameter  [ 2: 0]   OP_SR      = 3'b101,    // inst[30] == 0: SRL, inst[31] == 1: SRA
+                 parameter  [ 2: 0]   OP_OR      = 3'b110,
+                 parameter  [ 2: 0]   OP_AND     = 3'b111,
+
+                    // FUNC3, INST[14:12], INST[6:0] = 7'b0100011
+                    parameter  [ 2: 0] OP_SB      = 3'b000,
+                  parameter  [ 2: 0]  OP_SH      = 3'b001,
+                  parameter  [ 2: 0]  OP_SW      = 3'b010,
+                  parameter  [31: 0] RESETVEC   = 32'h0000_0000
+
+                    ) 
+
+                (input clk,
                 input resetb,
                 input           ex_imm_sel,
                 input[31:0]     ex_imm,
@@ -21,25 +42,27 @@ module execute (input clk,
                 input           ex_auipc,
                 input           ex_csr,
                 input           ex_alu,
-                input[2:0]      ex_alu_op,
+                input [2:0]      ex_alu_op,
                 input           ex_subtype,
                 input[31:0]     ex_pc,
-                
+                input [4:0]     ex_dst_sel,
+                input   [31: 0] dmem_rdata,
 
                 // Outputs to Writeback Stage
 
-                output[31:0]    wb_result,
-                output          wb_memwr,
-                output          wb_alu2reg,
-                output[4:0]     wb_dst_sel,
-                output          wb_mem2reg,
-                output[1:0]     wb_raddr,
-                output[2:0]     wb_aluop,
+                output reg [31:0]    wb_result,
+                output reg         wb_memwr,
+                output reg         wb_alu2reg,
+                output reg [4:0]     wb_dst_sel,
+                output reg         wb_mem2reg,
+                output reg [1:0]     wb_raddr,
+                output reg [2:0]     wb_alu_op,
                 //output          wb_branch,
                 //output          wb_branch_nxt,
-                output[31:0]    wb_waddr,
-                output[3:0]     wb_wstrb,
-                output[31:0]    wb_wdata
+                output reg [31:0]    wb_waddr,
+                output reg [3:0]     wb_wstrb,
+                output reg [31:0]    wb_wdata
+    
 
 );
     
@@ -57,12 +80,13 @@ module execute (input clk,
 
 
     // data memory wires 
-    wire dmem_waddr ;
-    wire dmem_raddr ;
+    wire[31:0] dmem_waddr ;
+    wire[31:0] dmem_raddr ;
     wire dmem_rready;
     wire dmem_wready;
-    wire dmem_wdata ;
-    wire dmem_wstrb ;
+    wire[31:0] dmem_wdata ;
+    wire[3:0] dmem_wstrb ;
+
 
 
 // Assigning values to Data memory variables 
@@ -77,9 +101,10 @@ assign dmem_wstrb           = wb_wstrb;
 
 
 // Selecting the first and second operands of ALU unit
-
-assign alu_op1[31: 0]       = reg_rdata1;
-assign alu_op2[31: 0]       = (ex_imm_sel) ? ex_imm : reg_rdata2;
+wire[31:0] alu_op1;
+wire[31:0] alu_op2;
+assign alu_op1       = reg_rdata1;
+assign alu_op2       = (ex_imm_sel) ? ex_imm : reg_rdata2;
 
 assign result_subs[32: 0]   = {alu_op1[31], alu_op1} - {alu_op2[31], alu_op2};
 assign result_subu[32: 0]   = {1'b0, alu_op1} - {1'b0, alu_op2};
@@ -191,14 +216,15 @@ begin
         wb_memwr            <= 1'b0;
         wb_alu2reg          <= 1'b0;
         wb_dst_sel          <= 5'h0;
-        wb_branch           <= 1'b0;
-        wb_branch_nxt       <= 1'b0;
+        //wb_branch           <= 1'b0;
+        //wb_branch_nxt       <= 1'b0;
         wb_mem2reg          <= 1'b0;
         wb_raddr            <= 2'h0;
         wb_alu_op           <= 3'h0;
     end 
 
     else 
+    // $display("");
     begin
         wb_result           <= result;
         wb_memwr            <= ex_memwr;                //deleted flush value
