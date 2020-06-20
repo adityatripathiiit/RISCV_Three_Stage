@@ -20,7 +20,7 @@ TARGET   = code
 
 #/// generating .text file of code cross-compiled from highlevel-c code to risc-v code
 # ////////////// Copying and converting the text file into binary files
-#/////// perl script to convert the binary files into the required hex files
+#/////// Python script to convert the binary files into the required hex files
 
 all: $(TARGET)
 
@@ -28,7 +28,7 @@ $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(LDFLAGS)
 	$(OBJCOPY) -j .text -O binary $(TARGET) ./imem_dmem/imem.bin
 	$(OBJCOPY) -j .data -O binary $(TARGET) ./imem_dmem/dmem.bin
-	cd imem_dmem && perl bin2hex.pl
+	cd imem_dmem && python bin2hex.py
 # /////clean function
 clean:
 	$(RM) $(TARGET) ./imem_dmem/imem.bin ./imem_dmem/imem.hex ./imem_dmem/dmem.bin ./imem_dmem/dmem.hex
