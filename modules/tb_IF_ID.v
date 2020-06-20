@@ -80,7 +80,7 @@ IF_ID IF_ID(
 
     memmodel # (
         .SIZE(IRAMSIZE),
-        .FILE("../memory_data/imem.hex")
+        .FILE("../mem_generator/imem_dmem/imem.hex")
     ) imem (
         .clk   (clk),
 
