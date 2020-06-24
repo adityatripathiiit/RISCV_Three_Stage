@@ -36,7 +36,6 @@ reg                     illegal_inst;
 reg             [31: 0] execute_immediate;
 reg                     alu;
 reg                     lui;
-reg                     auipc;
 reg                     jal;
 reg                     jalr;
 reg                     branch;
@@ -84,12 +83,8 @@ always @* begin
         STORE : immediate      = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]}; // S-type
         ARITHI: immediate      = (instruction[`FUNC3] == SLL || instruction[`FUNC3] == SR) ? {27'h0, instruction[24:20]} : {{20{instruction[31]}}, instruction[31:20]}; // I-type
         ARITHR: immediate      = 'd0; // R-type
-        AUIPC : immediate      = {instruction[31:12], 12'd0}; // U-type
         LUI   : immediate      = {instruction[31:12], 12'd0}; // U-type
         JAL   : immediate      = {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0}; // J-type
-        
-        FENCE : immediate      = 'd0;
-        SYSTEM: immediate      = {20'h0, instruction[31:20]};
         default: begin // illegal instruction
             illegal_inst    = 1'b1;
         end
@@ -123,7 +118,6 @@ always @(posedge clk or negedge reset) begin
         alu                    <= (instruction[`OPCODE] == ARITHI) ||
                                (instruction[`OPCODE] == ARITHR);
         lui                    <= instruction[`OPCODE] == LUI;
-        auipc                  <= instruction[`OPCODE] == AUIPC;
         jal                    <= instruction[`OPCODE] == JAL;
         jalr                   <= instruction[`OPCODE] == JALR;
         branch                 <= instruction[`OPCODE] == BRANCH;
