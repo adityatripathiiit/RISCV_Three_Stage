@@ -5,21 +5,6 @@
 module execute 
  #(
                     parameter  [31:0]    RESET   = 32'h0000_0000
-//                  parameter  [ 2: 0]   ADD     = 3'b000,    // inst[30] == 0: ADD, inst[31] == 1: SUB
-//                  parameter  [ 2: 0]   SLL     = 3'b001,
-//                  parameter  [ 2: 0]   SLT     = 3'b010,
-//                  parameter  [ 2: 0]   SLTU    = 3'b011,
-//                  parameter  [ 2: 0]   XOR     = 3'b100,
-//                  parameter  [ 2: 0]   SR      = 3'b101,    // inst[30] == 0: SRL, inst[31] == 1: SRA
-//                  parameter  [ 2: 0]   OR      = 3'b110,
-//                  parameter  [ 2: 0]   AND     = 3'b111,
-
-//                     // FUNC3, INST[14:12], INST[6:0] = 7'b0100011
-//                   parameter  [ 2: 0]  SB      = 3'b000,
-//                   parameter  [ 2: 0]  SH      = 3'b001,
-//                   parameter  [ 2: 0]  SW      = 3'b010,
-//                   parameter  [31: 0]  RESETVEC   = 32'h0000_0000
-
                     ) 
 
                 (input clk,
