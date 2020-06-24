@@ -1,37 +1,33 @@
 
 module testbench();
-    localparam      DRAMSIZE = 128*1024;
-    localparam      IRAMSIZE = 128*1024;
-
-    reg             clk;
-    reg             resetb;
-    wire            exception;
-
-    wire            imem_ready;
-    wire reg   [31: 0] imem_rdata;
-    wire            imem_valid;
-    wire    [31: 0] imem_addr;
+    localparam      IMEMSIZE = 128*1024;
 
     // pc counter and checker
     reg     [31: 0] next_pc;
     reg     [ 7: 0] count;
 
+
+    reg             clk;
+    reg             reset;
+    wire            exception;
+    wire            inst_mem_is_ready;
+    wire    [31: 0] inst_mem_read_data;
+    wire            inst_mem_is_valid;
+    wire    [31: 0] inst_mem_addr;
+
+
 initial
-      $monitor("inst=%h",imem_rdata);
+      $monitor("inst=%h",inst_mem_read_data);
 
 
-initial begin
+initial 
+begin
 
-    if ($test$plusargs("dumpvcd")) begin
-        $dumpfile("testbench.vcd");
-        $dumpvars(0, testbench);
-    end
-
-    clk             <= 1'b1;
-    resetb          <= 1'b0;
+    clk            <= 1'b1;
+    reset          <= 1'b0;
 
     repeat (10) @(posedge clk);
-    resetb          <= 1'b1;
+    reset          <= 1'b1;
 
 end
 
@@ -39,14 +35,14 @@ always #10 clk      <= ~clk;
 
 
 // check timeout if the PC do not change anymore
-always @(posedge clk or negedge resetb) begin
-    if (!resetb) begin
+always @(posedge clk or negedge reset) begin
+    if (!reset) begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
     end else begin
-        next_pc     <= IF_ID.if_pc;
+        next_pc     <= IF_ID.inst_fetch_pc;
 
-        if (next_pc == IF_ID.if_pc)
+        if (next_pc == IF_ID.inst_fetch_pc)
             count   <= count + 1;
         else
             count   <= 8'h0;
@@ -61,46 +57,48 @@ end
 // stop at exception
 always @(posedge clk) begin
     if (exception) begin
-        $display("Exception occurs, simulation exist.");
+        $display("All instructions are Fetched");
         #10 $finish(2);
     end
 end
 
 IF_ID IF_ID(
     .clk        (clk),
-    .resetb     (resetb),
+    .reset     (reset),
     .exception  (exception),
-
-    .imem_ready (imem_ready),
-    .imem_rdata (imem_rdata),
-    .imem_valid (imem_valid),
-    .imem_addr  (imem_addr)
+    .inst_mem_is_ready (inst_mem_is_ready),
+    .inst_mem_read_data (inst_mem_read_data),
+    .inst_mem_is_valid (inst_mem_is_valid),
+    .inst_mem_addr  (inst_mem_addr)
 );
 
 
-    memmodel # (
-        .SIZE(IRAMSIZE),
+    memory # (
+        .SIZE(IMEMSIZE),
         .FILE("../mem_generator/imem_dmem/imem.hex")
-    ) imem (
+        
+    ) inst_mem (
         .clk   (clk),
-
-        .rready(1'b1),
-        .wready(1'b0),
-        .rdata (imem_rdata),
-        .raddr (IF_ID.if_pc[31:2]),
-        .waddr (30'h0),
-        .wdata (32'h0),
-        .wstrb (4'h0)
+        .read_ready(1'b1),
+        .write_ready(1'b0),
+        .read_data (inst_mem_read_data),
+        .read_address (IF_ID.inst_fetch_pc[31:2]),
+        .write_address (30'h0),
+        .write_data (32'h0),
+        .write_byte (4'h0)
     );
 
 
 
 // check memory range
 always @(posedge clk) begin
-    if (imem_ready && imem_addr[31:$clog2(IRAMSIZE)] != 'd0) begin
-        $display("IMEM address %x out of range", imem_addr);
+    if (inst_mem_is_ready && inst_mem_addr[31:$clog2(IMEMSIZE)] != 'd0) begin
+        $display("IMEM address %x out of range", inst_mem_addr);
         #10 $finish(2);
     end
 end
 
 endmodule
+
+
+
