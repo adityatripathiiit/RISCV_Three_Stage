@@ -11,6 +11,7 @@ module IF_ID
     (
     input                   clk,
     input                   reset,
+    input                   stall,
     output reg              exception,  
 
     // interface of instruction Memory
@@ -39,6 +40,7 @@ reg                     lui;
 reg                     jal;
 reg                     jalr;
 reg                     branch;
+reg                     stall_read;
 wire             [31:0] instruction;
 
 // pc wires
@@ -57,7 +59,7 @@ initial inst_fetch_pc = 0;
 ////////////////////////////////////////////////////////////////
 // IF stage 
 ////////////////////////////////////////////////////////////////
-assign instruction                 =  inst_mem_read_data;
+assign instruction                 =  flush ? NOP : inst_mem_read_data;
 
 // check for illegal instruction(instruction not in RV-32I architecture)
 
@@ -68,6 +70,16 @@ always @(posedge clk or negedge reset) begin
         exception           <= 1'b0;
     else if (illegal_inst || inst_mem_addr[1:0] != 0)
         exception           <= 1'b1;
+end
+
+always @(posedge clk or negedge reset) begin
+    if (!reset) begin
+        stall_read             <= 1'b1;
+        flush               <= 1'b1;
+    end else begin
+        stall_read             <= stall;
+        flush               <= stall_read;
+    end
 end
 
 ////////////////////////////////////////////////////////////////
@@ -115,7 +127,7 @@ always @(posedge clk or negedge reset) begin
         arithsubtype           <= 1'b0;
         mem_write              <= 1'b0;
         mem_to_reg             <= 1'b0;
-    end else if(!inst_fetch_stall) begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
+    end else if(!stall_read && !inst_fetch_stall) begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
         execute_immediate      <= immediate;
         immediate_sel          <= (instruction[`OPCODE] == JALR  ) ||
                                (instruction[`OPCODE] == LOAD  ) ||
@@ -136,7 +148,6 @@ always @(posedge clk or negedge reset) begin
         mem_to_reg             <= instruction[`OPCODE] == LOAD;
         
     end
-    inst_fetch_pc <= inst_fetch_pc+4;
 end
 
 endmodule

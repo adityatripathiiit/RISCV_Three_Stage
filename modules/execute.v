@@ -20,7 +20,8 @@ module execute
                 input [2:0]     alu_operation,
                 input           arithsubtype,
                 input[31:0]     pc,
-                input [4:0]     dest_reg_sel   
+                input [4:0]     dest_reg_sel ,
+                input           dmem_read_valid  
              );
 
     `include "opcode.vh"
@@ -43,7 +44,7 @@ module execute
     // write back 
     reg                     wb_alu_to_reg;
     reg             [31: 0] wb_result;
-    reg             [ 2: 0] wb_alu_op;
+    reg             [ 2: 0] wb_alu_operation;
     reg                     wb_mem_write;
     reg                     wb_mem_to_reg;
     reg             [ 4: 0] wb_dest_reg_sel;
@@ -53,13 +54,12 @@ module execute
     reg             [ 1: 0] wb_read_address;
     reg             [ 3: 0] wb_write_byte;
     reg             [31: 0] wb_write_data;
-    wire            [31: 0] dmem_read_address;
 
 // Selecting the first and second operands of ALU unit
 wire[31:0] alu_operand1;
 wire[31:0] alu_operand2;
 
-assign stall             = (IF_ID.inst_fetch_stall) || (mem_to_reg);
+assign stall             = (IF_ID.inst_fetch_stall) || (mem_to_reg && !dmem_read_valid);
 
 assign alu_operand1       = reg_rdata1;
 assign alu_operand2       = (immediate_sel) ? immediate : reg_rdata2;
@@ -168,7 +168,7 @@ begin
     begin
         fetch_pc <= RESET;
     end 
-    end else if (!stall) begin
+    end else if (!IF_ID.stall_read && !stall) begin
         fetch_pc            <= (branch_stall) ? fetch_pc + 4 : next_pc;
     end
 end
@@ -185,7 +185,7 @@ always @(posedge clk or negedge reset) begin
         wb_mem_to_reg          <= 1'b0;
         wb_read_address            <= 2'h0;
         wb_alu_operation           <= 3'h0;
-    end else if (!stall) begin
+    end else if (!stall && !IF_ID.stall_read) begin
         wb_result           <= result;
         wb_mem_write            <= mem_write && !branch_stall;
         wb_alu_to_reg          <= alu | lui | jal | jalr | mem_to_reg;
@@ -193,7 +193,7 @@ always @(posedge clk or negedge reset) begin
         wb_branch           <= branch_taken;
         wb_branch_nxt       <= wb_branch;
         wb_mem_to_reg          <= mem_to_reg;
-        wb_read_address            <= dmem_read_address[1:0];
+        wb_read_address            <= wb.dmem_read_address[1:0];
         wb_alu_operation           <= alu_operation;
     end
 end
@@ -204,7 +204,7 @@ always @(posedge clk or negedge reset) begin
         wb_write_address            <= 32'h0;
         wb_write_byte            <= 4'h0;
         wb_write_data            <= 32'h0;
-    end else if (!stall && mem_write) begin
+    end else if (!stall && !IF_ID.stall_read && mem_write) begin
         wb_write_address            <= write_address;
         case(alu_operation)
             SB: begin
