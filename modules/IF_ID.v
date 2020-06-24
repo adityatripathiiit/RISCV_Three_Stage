@@ -39,11 +39,14 @@ reg                     lui;
 reg                     jal;
 reg                     jalr;
 reg                     branch;
-wire         [31:0] instruction;
+wire             [31:0] instruction;
 
 // pc wires
 reg             [31: 0] inst_fetch_pc;
 reg             [31: 0] pc;
+
+//stalls
+wire                    inst_fetch_stall;
 
 // Wire declarations end
 
@@ -57,6 +60,8 @@ initial inst_fetch_pc = 0;
 assign instruction                 =  inst_mem_read_data;
 
 // check for illegal instruction(instruction not in RV-32I architecture)
+
+assign inst_fetch_stall = !inst_mem_is_valid;
 
 always @(posedge clk or negedge reset) begin
     if (!reset)
@@ -110,7 +115,7 @@ always @(posedge clk or negedge reset) begin
         arithsubtype           <= 1'b0;
         mem_write              <= 1'b0;
         mem_to_reg             <= 1'b0;
-    end else begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
+    end else if(!inst_fetch_stall) begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
         execute_immediate      <= immediate;
         immediate_sel          <= (instruction[`OPCODE] == JALR  ) ||
                                (instruction[`OPCODE] == LOAD  ) ||
