@@ -1,78 +1,53 @@
 // `include "opcode.vh"
-
-`define MEM_PUTC    32'h8000001c
-`define MEM_EXIT    32'h8000002c
-
 module testbench();
-    localparam      DRAMSIZE = 128*1024;
-    localparam      IRAMSIZE = 128*1024;
-
-    reg             clk;
-    reg             resetb;
-    wire            exception;
-    // Instruction memory wires
-    wire            imem_ready;
-    wire  reg  [31: 0] imem_rdata;
-    wire            imem_valid;
-    wire    [31: 0] imem_addr;
-    // Data memory wires 
-   
-    wire            dmem_rready;
-    wire            dmem_wready;
-    wire    [31: 0] dmem_rdata;
-    wire            dmem_rvalid;
-    wire            dmem_wvalid;
-    wire    [31: 0] dmem_raddr;
-    wire    [31: 0] dmem_waddr;
-    wire    [31: 0] dmem_wdata;
-    wire    [ 3: 0] dmem_wstrb;
-    
-
-
-    // execute stage wires
-    
-    wire   [31:0]    wb_result;
-    wire              wb_memwr;
-    wire              wb_alu2reg;
-    wire    [4:0]     wb_dst_sel;
-    wire              wb_mem2reg;
-    wire    [1:0]     wb_raddr;
-    wire    [2:0]     wb_alu_op;
-    //wire          wb_branch;
-    //wire          wb_branch_nxt;
-    wire    [31:0]    wb_waddr;
-    wire    [3:0]     wb_wstrb;
-    wire    [31:0]    wb_wdata;
-    
+    localparam      IMEMSIZE = 128*1024;
+    localparam      DMEMSIZE = 128*1024;
 
     // pc counter and checker
     reg     [31: 0] next_pc;
     reg     [ 7: 0] count;
 
-assign dmem_rvalid  = 1'b1;
-assign dmem_wvalid  = 1'b1;
-assign imem_valid   = 1'b1;
+    reg             clk;
+    reg             reset;
+    reg             stall;
+    wire            exception;
+    wire            inst_mem_is_ready;
+    wire    [31: 0] inst_mem_read_data;
+    wire            inst_mem_is_valid;
+    wire    [31: 0] inst_mem_address;
+
+    wire            dmem_read_ready;
+    wire            dmem_write_ready;
+    wire    [31: 0] dmem_read_data;
+    wire            dmem_read_valid;
+    wire            dmem_write_valid;
+    wire    [31: 0] dmem_read_address;
+    wire    [31: 0] dmem_write_address;
+    wire    [31: 0] dmem_write_data;
+    wire    [ 3: 0] dmem_write_byte;
+
+assign dmem_read_valid  = 1'b1;
+assign dmem_write_valid  = 1'b1;
+
+assign inst_mem_is_valid   = 1'b1;
 
 initial
 begin
-      //$monitor("inst=%b",imem_rdata);
-     //$monitor("result=%d",execute.result);
-      //$monitor("alu=%b",IF_ID.ex_subtype);
-      //$monitor("rdata=%d",execute.dmem_rdata);
+     $monitor("result=%h",IF_ID.instruction);
 end
 
-initial begin
 
-    if ($test$plusargs("dumpvcd")) begin
-        $dumpfile("testbench.vcd");
-        $dumpvars(0, testbench);
-    end
+initial 
+begin
 
-    clk             <= 1'b1;
-    resetb          <= 1'b0;
+    clk            <= 1'b1;
+    reset          <= 1'b0;
 
-    //repeat (10) @(posedge clk);
-    # 10 resetb          <= 1'b1;
+    repeat (10) @(posedge clk);
+    reset          <= 1'b1;
+
+    repeat (10) @(posedge clk);
+    stall           <= 1'b0;
 
 end
 
@@ -80,14 +55,14 @@ always #10 clk      <= ~clk;
 
 
 // check timeout if the PC do not change anymore
-always @(posedge clk or negedge resetb) begin
-    if (!resetb) begin
+always @(posedge clk or negedge reset) begin
+    if (!reset) begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
     end else begin
-        next_pc     <= IF_ID.if_pc;
+        next_pc     <= IF_ID.inst_fetch_pc;
 
-        if (next_pc == IF_ID.if_pc)
+        if (next_pc == IF_ID.inst_fetch_pc)
             count   <= count + 1;
         else
             count   <= 8'h0;
@@ -102,56 +77,50 @@ end
 // stop at exception
 always @(posedge clk) begin
     if (exception) begin
-        $display("Exception occurs, simulation exist.");
+        $display("All instructions are Fetched");
         #10 $finish(2);
     end
 end
 
-
-// Instantiating the modules and
-
-
+// Instantiating the modules
 
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Instruction memory
 //////////////////////////////////////////////////////////
 
-    memmodel # (
-        .SIZE(IRAMSIZE),
-        .FILE("../memory_data/imem.hex")
-    ) imem (
+
+    memory # (
+        .SIZE(IMEMSIZE),
+        .FILE("../mem_generator/imem_dmem/imem.hex")
+        
+    ) inst_mem (
         .clk   (clk),
-
-        .rready(1'b1),
-        .wready(1'b0),
-        .rdata (imem_rdata),
-        .raddr (IF_ID.if_pc[31:2]),
-        .waddr (30'h0),
-        .wdata (32'h0),
-        .wstrb (4'h0)
+        .read_ready(1'b1),
+        .write_ready(1'b0),
+        .read_data (inst_mem_read_data),
+        .read_address (IF_ID.inst_fetch_pc[31:2]),
+        .write_address (30'h0),
+        .write_data (32'h0),
+        .write_byte (4'h0)
     );
-
-
-
 
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Data memory
 //////////////////////////////////////////////////////////
-    memmodel # (
-        .SIZE(DRAMSIZE),
-        .FILE("../memory_data/dmem.hex")
+    memory # (
+        .SIZE(DMEMSIZE),
+        .FILE("../mem_generator/imem_dmem/dmem.hex")
     ) dmem (
         .clk   (clk),
-        .rready(execute.dmem_rready),
-        .wready(execute.dmem_wready),
-        .rdata (dmem_rdata),
-        .raddr (execute.dmem_raddr[31:2]),
-        .waddr (execute.dmem_waddr[31:2]),
-        .wdata (execute.dmem_wdata),
-        .wstrb (execute.dmem_wstrb)
+
+        .read_ready(dmem_read_ready),
+        .write_ready(dmem_write_ready),
+        .read_data (dmem_read_data),
+        .read_address (dmem_read_address[31:2]),
+        .write_address (dmem_write_address[31:2]),
+        .write_data (dmem_write_data),
+        .write_byte (dmem_write_byte)
     );
-
-
 
 
 ///////////////////////////////////////////////////////////
@@ -160,155 +129,73 @@ end
 
 IF_ID IF_ID(
     .clk        (clk),
-    .resetb     (resetb),
+    .reset     (reset),
+    .stall      (stall),
     .exception  (exception),
-
-    .imem_ready (imem_ready),
-    .imem_rdata (imem_rdata),
-    .imem_valid (imem_valid),
-    .imem_addr  (imem_addr)
+    .inst_mem_is_ready (inst_mem_is_ready),
+    .inst_mem_read_data (inst_mem_read_data),
+    .inst_mem_is_valid (inst_mem_is_valid),
+    .inst_mem_address  (inst_mem_address)
 );
-
-
 
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Execute stage
 //////////////////////////////////////////////////////////
 execute execute(
     .clk        (clk),
-    .resetb     (resetb),
-    .dmem_rdata(dmem_rdata),
-    .ex_imm_sel(IF_ID.ex_imm_sel),
-    .ex_imm(IF_ID.ex_imm),
-    .ex_memwr(IF_ID.ex_memwr),
-    .ex_mem2reg(IF_ID.ex_mem2reg),
-    .ex_jal(IF_ID.ex_jal),
-    .ex_jalr(IF_ID.ex_jalr),
-    .ex_lui(IF_ID.ex_lui),
-    .ex_auipc(IF_ID.ex_auipc),
-    .ex_csr(IF_ID.ex_csr),
-    .ex_alu(IF_ID.ex_alu),
-    .ex_alu_op(IF_ID.ex_alu_op),
-    .ex_subtype(IF_ID.ex_subtype),
-    .ex_pc(IF_ID.ex_pc),
-    .ex_dst_sel(IF_ID.ex_dst_sel),
-    
-    .wb_result(wb_result),
-    .wb_memwr(wb_memwr),
-    .wb_alu2reg(wb_alu2reg),
-    .wb_dst_sel(wb_dst_sel),
-    .wb_mem2reg(wb_mem2reg),
-    .wb_raddr(wb_raddr),
-    .wb_alu_op(wb_alu_op),
-    //.wb_branch(wb_branch),
-    //.wb_branch_nxt(wb_branch_nxt),
-    .wb_waddr(wb_waddr),
-    .wb_wstrb(wb_wstrb),
-    .wb_wdata(wb_wdata)
-    
-);
-
+    .reset     (reset),
+    .immediate_sel(IF_ID.immediate_sel),
+    .immediate(IF_ID.immediate),
+    .mem_write(IF_ID.mem_write),
+    .mem_to_reg(IF_ID.mem_to_reg),
+    .jal(IF_ID.jal),
+    .jalr(IF_ID.jalr),
+    .lui(IF_ID.lui),
+    .alu(IF_ID.alu),
+    .alu_operation(IF_ID.alu_operation),
+    .arithsubtype(IF_ID.arithsubtype),
+    .pc(IF_ID.pc),
+    .dest_reg_sel(IF_ID.dest_reg_sel),
+    .dmem_read_valid(dmem_read_valid)
+   );
 
 ///////////////////////////////////////////////////////////
-/////// Instanatiate Writeback stage
+/////// Instanatiate Write Back stage
 //////////////////////////////////////////////////////////
 wb wb(
     .clk        (clk),
-    .resetb     (resetb),
-    .fetch_pc   (IF_ID.if_pc),
-    .wb_raddr   (wb_raddr),
-    .wb_memwr   (wb_memwr),
-    .dmem_wvalid(dmem_wvalid),
-    .dmem_rdata (dmem_rdata),
-    .ex_src1_sel(IF_ID.ex_src1_sel),
-    .ex_src2_sel(IF_ID.ex_src2_sel),
-    .wb_alu2reg (wb_alu2reg),
-    .wb_dst_sel (wb_dst_sel),
-    .wb_result  (wb_result),
-    .wb_mem2reg (wb_mem2reg),
-    .wb_alu_op  (wb_alu_op) 
-);
-
-
-
-
+    .reset     (reset),
+    .wb_read_address(execute.wb_read_address),
+    .wb_branch(execute.wb_branch),
+    .src1_select(IF_ID.src1_select),
+    .src2_select(IF_ID.src2_select),
+    .wb_alu_to_reg(execute.wb_alu_to_reg),
+    .wb_dest_reg_sel(execute.wb_dest_reg_sel),
+    .wb_result(execute.wb_result),
+    .wb_mem_to_reg(execute.wb_mem_to_reg),
+    .wb_alu_operation(execute.wb_alu_operation),
+    .dmem_write_ready(dmem_write_ready),
+    .dmem_read_ready(dmem_read_ready),
+    .dmem_read_data(dmem_read_data),
+    .dmem_write_valid(dmem_write_valid),
+    .dmem_read_valid(dmem_read_valid),
+    .dmem_write_address(dmem_write_address),
+    .dmem_read_address(dmem_read_address),
+    .dmem_write_data(dmem_write_data),
+    .dmem_write_byte(dmem_write_byte)
+   );
 
 
 // check memory range
 always @(posedge clk) begin
-    if (imem_ready && imem_addr[31:$clog2(IRAMSIZE)] != 'd0) begin
-        $display("IMEM address %x out of range", imem_addr);
+    if (inst_mem_is_ready && inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) begin
+        $display("IMEM address %x out of range", inst_mem_address);
         #10 $finish(2);
     end
-
-   if (execute.dmem_wready && execute.dmem_waddr == `MEM_PUTC) begin
-        $write("%c", execute.dmem_wdata[7:0]);
-    end
-    else if (execute.dmem_wready && execute.dmem_waddr == `MEM_EXIT) begin
-        // $display("\nExcuting %0d instructions, %0d cycles", riscv.rdinstret, riscv.rdcycle);
-        $display("\nExcuting %0d instructions, %0d cycles", 1'b1, 1'b1);
-
-        $display("Program terminate");
-        #10 $finish(1);
-    end
-    else if (execute.dmem_wready && execute.dmem_waddr[31:$clog2(DRAMSIZE+IRAMSIZE)] != 'd0) begin
-        $display("DMEM address %x out of range", execute.dmem_waddr);
+    if (dmem_write_ready && dmem_write_address[31:$clog2(DMEMSIZE+IMEMSIZE)] != 'd0) begin
+        $display("DMEM address %x out of range", dmem_write_address);
         #10 $finish(2);
     end
-    
 end
-
-
-`ifdef TRACE
-    integer         fp;
-
-    reg [7*8:1] regname;
-
-initial begin
-    if ($test$plusargs("trace")) begin
-        fp = $fopen("trace.log", "w");
-    end
-end
-
-always @* begin
-    case(wb_dst_sel)
-        'd0: regname = "zero";
-        'd1: regname = "ra";
-        'd2: regname = "sp";
-        'd3: regname = "gp";
-        'd4: regname = "tp";
-        'd5: regname = "t0";
-        'd6: regname = "t1";
-        'd7: regname = "t2";
-        'd8: regname = "s0(fp)";
-        'd9: regname = "s1";
-        'd10: regname = "a0";
-        'd11: regname = "a1";
-        'd12: regname = "a2";
-        'd13: regname = "a3";
-        'd14: regname = "a4";
-        'd15: regname = "a5";
-        'd16: regname = "a6";
-        'd17: regname = "a7";
-        'd18: regname = "s2";
-        'd19: regname = "s3";
-        'd20: regname = "s4";
-        'd21: regname = "s5";
-        'd22: regname = "s6";
-        'd23: regname = "s7";
-        'd24: regname = "s8";
-        'd25: regname = "s9";
-        'd26: regname = "s10";
-        'd27: regname = "s11";
-        'd28: regname = "t3";
-        'd29: regname = "t4";
-        'd30: regname = "t5";
-        'd31: regname = "t6";
-        default: regname = "xx";
-    endcase
-end
-
-
-`endif
 
 endmodule

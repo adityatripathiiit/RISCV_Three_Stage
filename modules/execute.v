@@ -38,7 +38,7 @@ module execute
     wire            [31: 0] write_address;
 
     reg                     branch_taken;
-    reg                     branch_stall;
+    wire                     branch_stall;
     wire                    stall;
 
     // write back 
@@ -80,7 +80,7 @@ begin
         case(1'b1)
         jal   : next_pc = pc + immediate;
         jalr  : next_pc = alu_operand1 + immediate;
-        branch: begin
+        IF_ID.branch: begin
             case(alu_operation) 
                 BEQ : begin
                             next_pc = (result_subs[32: 0] == 'd0) ? pc + immediate : fetch_pc + 4;
@@ -168,7 +168,7 @@ begin
     begin
         fetch_pc <= RESET;
     end 
-    end else if (!IF_ID.stall_read && !stall) begin
+    else if (!IF_ID.stall_read && !stall) begin
         fetch_pc            <= (branch_stall) ? fetch_pc + 4 : next_pc;
     end
 end
@@ -200,7 +200,7 @@ end
 
 
 always @(posedge clk or negedge reset) begin
-    if (!resetb) begin
+    if (!reset) begin
         wb_write_address            <= 32'h0;
         wb_write_byte            <= 4'h0;
         wb_write_data            <= 32'h0;

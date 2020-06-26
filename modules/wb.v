@@ -8,10 +8,8 @@ module wb #(
     input clk,
     input reset,
 
-    // input           [31:0]  execute.fetch_pc,
     input           [1:0]   wb_read_address,
     input                   wb_branch,
-
     input           [4:0]   src1_select,
     input           [4:0]   src2_select,
     input                   wb_alu_to_reg,
@@ -42,8 +40,8 @@ reg [31: 0] regs [31: 1];
 wire    wb_stall;
 wire    wb_nop_stall;
 
-assign imem_addr            = execute.fetch_pc;
-assign imem_ready           = !IF_ID.stall_read && !wb_stall;
+assign IF_ID.inst_mem_address           = execute.fetch_pc;
+assign IF_ID.inst_mem_is_ready           = !IF_ID.stall_read && !wb_stall;
 assign wb_stall             = execute.stall || (execute.wb_mem_to_reg && !dmem_write_valid);
 assign wb_nop_stall             = wb_nop || wb_nop_more;
 
@@ -60,16 +58,16 @@ always @(posedge clk or negedge reset) begin
     if (!reset) begin
         IF_ID.inst_fetch_pc <= RESET;
     end
-    end else if (!IF_ID.stall_read && !wb_stall) begin
+    else if (!IF_ID.stall_read && !wb_stall) begin
         IF_ID.inst_fetch_pc               <= execute.fetch_pc;
     end
 end
 
 
-initial
-begin
-$monitor("reg=%d",regs[4]);
-end
+// initial
+// begin
+// $monitor("reg=%d",regs[4]);
+// end
 
 
 always @(posedge clk or negedge reset) begin

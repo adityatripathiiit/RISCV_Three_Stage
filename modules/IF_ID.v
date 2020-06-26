@@ -18,7 +18,7 @@ module IF_ID
     input                   inst_mem_is_valid,
     input           [31: 0] inst_mem_read_data,
     output                  inst_mem_is_ready,
-    output          [31: 0] inst_mem_addr
+    output          [31: 0] inst_mem_address
 );
 
 `include "opcode.vh"
@@ -49,7 +49,7 @@ reg             [31: 0] pc;
 
 //stalls
 wire                    inst_fetch_stall;
-
+reg                     flush;
 // Wire declarations end
 
 initial inst_fetch_pc = 0;
@@ -59,7 +59,7 @@ initial inst_fetch_pc = 0;
 ////////////////////////////////////////////////////////////////
 // IF stage 
 ////////////////////////////////////////////////////////////////
-assign instruction                 =  flush ? NOP : inst_mem_read_data;
+assign instruction                 = inst_mem_read_data;
 
 // check for illegal instruction(instruction not in RV-32I architecture)
 
@@ -68,8 +68,8 @@ assign inst_fetch_stall = !inst_mem_is_valid;
 always @(posedge clk or negedge reset) begin
     if (!reset)
         exception           <= 1'b0;
-    else if (illegal_inst || inst_mem_addr[1:0] != 0)
-        exception           <= 1'b1;
+    // else if (illegal_inst || inst_mem_address[1:0] != 0)
+    //     exception           <= 1'b1;
 end
 
 always @(posedge clk or negedge reset) begin
