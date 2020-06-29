@@ -42,12 +42,12 @@ wire    wb_nop_stall;
 
 assign IF_ID.inst_mem_address           = execute.fetch_pc;
 assign IF_ID.inst_mem_is_ready           = !IF_ID.stall_read && !wb_stall;
-assign wb_stall             = execute.stall || (execute.wb_mem_to_reg && !dmem_write_valid);
+assign wb_stall             = execute.execute_stall || (execute.wb_mem_to_reg && !dmem_write_valid);
 assign wb_nop_stall             = wb_nop || wb_nop_more;
 
 ////////////////////////////////
 assign dmem_write_address           = execute.wb_write_address;
-assign dmem_read_address           = execute.alu_operand1 + execute.immediate;
+assign dmem_read_address           = execute.alu_operand1 + execute.execute_immediate;
 assign dmem_read_ready          = execute.mem_to_reg;
 assign dmem_write_ready          = execute.wb_mem_write;
 assign dmem_write_data           = execute.wb_write_data;
@@ -66,7 +66,7 @@ end
 
 // initial
 // begin
-// $monitor("reg=%d",regs[4]);
+// $monitor("reg=%d",regs[0]);
 // end
 
 
@@ -74,7 +74,7 @@ always @(posedge clk or negedge reset) begin
     if (!reset) begin
         wb_nop              <= 1'b0;
         wb_nop_more         <= 1'b0;
-    end else if (!IF_ID.stall_read && !(execute.stall || (execute.wb_mem_to_reg && !dmem_write_valid))) begin
+    end else if (!IF_ID.stall_read && !(execute.execute_stall || (execute.wb_mem_to_reg && !dmem_write_valid))) begin
         wb_nop              <= wb_branch;
         wb_nop_more         <= wb_nop;
     end
@@ -108,11 +108,13 @@ end
 ////////////////////////////////////////////////////////////
 // Register file
 ////////////////////////////////////////////////////////////
+wire temp;
+assign temp = !wb_nop_stall && wb_alu_to_reg && (wb_dest_reg_sel == src1_select);
 
-assign execute.reg_rdata1[31: 0] = (src1_select == 5'h0) ? 32'h0 :
+assign reg_rdata1[31: 0] = (src1_select == 5'h0) ? 32'h0 :
                         (!wb_nop_stall && wb_alu_to_reg && (wb_dest_reg_sel == src1_select)) ? (wb_mem_to_reg ? wb_read_data : wb_result) :
                         regs[src1_select];
-assign execute.reg_rdata2[31: 0] = (src2_select == 5'h0) ? 32'h0 :
+assign reg_rdata2[31: 0] = (src2_select == 5'h0) ? 32'h0 :
                         (!wb_nop_stall && wb_alu_to_reg && (wb_dest_reg_sel == src2_select)) ? (wb_mem_to_reg ? wb_read_data : wb_result) :
                         regs[src2_select];
 
@@ -123,6 +125,7 @@ always @(posedge clk or negedge reset) begin
             regs[i] <= 32'h0;
         end
     end else if (wb_alu_to_reg && !IF_ID.stall_read && !(wb_stall || wb_nop_stall)) begin
+        // $display("hello");
         regs[wb_dest_reg_sel]    <= wb_mem_to_reg ? wb_read_data : wb_result;
     end
 end

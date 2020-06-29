@@ -1,20 +1,24 @@
 #//////////////////////////////////////////////////////
 #/////////////////INCLUDING CROSS-COMPILER/////////////
 
-CC      = riscv-none-embed-gcc
-OBJCOPY = riscv-none-embed-objcopy
+CC      = riscv32-unknown-elf-gcc
+AR      = riscv32-unknown-elf-ar
+OBJDUMP = riscv32-unknown-elf-objdump
+OBJCOPY = riscv32-unknown-elf-objcopy
+READELF = riscv32-unknown-elf-readelf
+
 
 #///// flags for RV32i architecture///////////////////
-CFLAGS  = -O3 -Wall -march=rv32i -nostartfiles -nostdlib
-LDFLAGS = -lc -lm -lgcc
+CFLAGS  = -march=rv32i -mabi=ilp32
+# LDFLAGS = -lc -lm -lgcc
 
 #////Source for c code file ///////////////////////////
 SRC      = code.c
 
 #///// Default value flags for RV32i architecture//////
-LDFLAGS += -T ./default.ld
+# LDFLAGS += -T ./default.ld
 #///// Target name for generated files ////////////////
-TARGET   = code
+TARGET   = code.elf
 
 .PHONY: all clean
 
@@ -25,10 +29,11 @@ TARGET   = code
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(LDFLAGS)
-	$(OBJCOPY) -j .text -O binary $(TARGET) ./imem_dmem/imem.bin
+	$(CC) -c  $(SRC) -o $(TARGET) $(CFLAGS)
+	$(OBJCOPY) -O binary $(TARGET) ./imem_dmem/imem.bin
 	$(OBJCOPY) -j .data -O binary $(TARGET) ./imem_dmem/dmem.bin
-	cd imem_dmem && python bin2hex.py
+	$(OBJDUMP) -d $(TARGET) > ./imem_dmem/code.dis
+	cd imem_dmem && python3 bin2hex.py
 # /////clean function
 clean:
-	$(RM) $(TARGET) ./imem_dmem/imem.bin ./imem_dmem/imem.hex ./imem_dmem/dmem.bin ./imem_dmem/dmem.hex
+	$(RM) $(TARGET) ./imem_dmem/imem.bin ./imem_dmem/imem.hex ./imem_dmem/dmem.bin ./imem_dmem/dmem.hex ./imem_dmem/code.dis

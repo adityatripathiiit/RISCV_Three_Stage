@@ -38,7 +38,7 @@ assign inst_mem_is_valid   = 1'b1;
 initial
 begin
     //  $monitor("time: %t , inst_fetch_stall=%d",$time, IF_ID.inst_fetch_stall);
-     $monitor("time: %t , dmem_write_address =%d",$time, execute.alu_operand2);
+     $monitor("time: %t , alu_operand2 =%d",$time, pipeline.alu_operand2);
     //  $monitor("time: %t , inst_read_data=%h",$time, IF_ID.inst_mem_read_data);
 end
 
@@ -135,7 +135,7 @@ end
 /////// Instanatiate IF/ID stage
 //////////////////////////////////////////////////////////
 
-IF_ID IF_ID(
+pipeline pipeline(
     .clk        (clk),
     .reset     (reset),
     .stall      (stall),
@@ -144,51 +144,6 @@ IF_ID IF_ID(
     .inst_mem_read_data (inst_mem_read_data),
     .inst_mem_is_valid (inst_mem_is_valid),
     .inst_mem_address  (inst_mem_address),
-    .stall_read(stall_read),
-    .inst_fetch_pc(inst_fetch_pc),
-    .branch(branch),
-    .mem_write(mem_write)
-);
-
-///////////////////////////////////////////////////////////
-/////// Instanatiate Execute stage
-//////////////////////////////////////////////////////////
-execute execute(
-    .clk        (clk),
-    .reset     (reset),
-    .inst_fetch_stall(IF_ID.inst_fetch_stall),
-    .branch(branch),
-    .mem_write(mem_write),
-    .stall_read(stall_read),
-    .immediate_sel(IF_ID.immediate_sel),
-    .execute_immediate(IF_ID.execute_immediate),
-    .mem_to_reg(IF_ID.mem_to_reg),
-    .jal(IF_ID.jal),
-    .jalr(IF_ID.jalr),
-    .lui(IF_ID.lui),
-    .alu(IF_ID.alu),
-    .alu_operation(IF_ID.alu_operation),
-    .arithsubtype(IF_ID.arithsubtype),
-    .pc(IF_ID.pc),
-    .dmem_read_valid(dmem_read_valid),
-    .dest_reg_sel(IF_ID.dest_reg_sel)
-   );
-
-///////////////////////////////////////////////////////////
-/////// Instanatiate Write Back stage
-//////////////////////////////////////////////////////////
-wb wb(
-    .clk        (clk),
-    .reset     (reset),
-    .wb_read_address(execute.wb_read_address),
-    .wb_branch(execute.wb_branch),
-    .src1_select(IF_ID.src1_select),
-    .src2_select(IF_ID.src2_select),
-    .wb_alu_to_reg(execute.wb_alu_to_reg),
-    .wb_dest_reg_sel(execute.wb_dest_reg_sel),
-    .wb_result(execute.wb_result),
-    .wb_mem_to_reg(execute.wb_mem_to_reg),
-    .wb_alu_operation(execute.wb_alu_operation),
     .dmem_write_ready(dmem_write_ready),
     .dmem_read_ready(dmem_read_ready),
     .dmem_read_data(dmem_read_data),
@@ -198,7 +153,13 @@ wb wb(
     .dmem_read_address(dmem_read_address),
     .dmem_write_data(dmem_write_data),
     .dmem_write_byte(dmem_write_byte)
-   );
+);
+
+
+
+///////////////////////////////////////////////////////////
+/////// Instanatiate Write Back stage
+//////////////////////////////////////////////////////////
 
 
 // check memory range

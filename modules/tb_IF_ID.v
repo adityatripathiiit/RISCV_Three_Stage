@@ -17,7 +17,7 @@ module testbench();
 
 
 initial
-      $monitor("inst=%h",inst_mem_read_data);
+      $monitor("inst=%h",IF_ID.instruction);
 
 
 initial 

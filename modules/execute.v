@@ -1,3 +1,5 @@
+
+`timescale 1ns/100fs 
 ////////////////////////////////////////////////////////////
 // Stage 2: Execute
 ////////////////////////////////////////////////////////////
@@ -9,9 +11,12 @@ module execute
 
                 (input clk,
                 input reset,
-                input           immediate_sel,
-                input[31:0]     immediate,
+                input           inst_fetch_stall,
+                input           branch,
                 input           mem_write,
+                input           stall_read,
+                input           immediate_sel,
+                input[31:0]     execute_immediate,
                 input           mem_to_reg,
                 input           jal,
                 input           jalr,
@@ -20,14 +25,14 @@ module execute
                 input [2:0]     alu_operation,
                 input           arithsubtype,
                 input[31:0]     pc,
-                input [4:0]     dest_reg_sel ,
-                input           dmem_read_valid  
+                input           dmem_read_valid,
+                input [4:0]     dest_reg_sel  
              );
 
     `include "opcode.vh"
     
     reg             [31:0]  fetch_pc ;           
-    wire            [31:0]  reg_rdata1 ;         
+    //wire            [31:0]  Iwb.reg_rdata1 ;         
     wire            [31:0]  reg_rdata2 ;         
     
 
@@ -40,7 +45,7 @@ module execute
     reg                     branch_taken;
     wire                     branch_stall;
     wire                    stall;
-
+    wire                    execute_stall;
     // write back 
     reg                     wb_alu_to_reg;
     reg             [31: 0] wb_result;
@@ -59,14 +64,14 @@ module execute
 wire[31:0] alu_operand1;
 wire[31:0] alu_operand2;
 
-assign stall             = (IF_ID.inst_fetch_stall) || (mem_to_reg && !dmem_read_valid);
+assign execute_stall             = (inst_fetch_stall) || (mem_to_reg && !dmem_read_valid);
 
-assign alu_operand1       = reg_rdata1;
-assign alu_operand2       = (immediate_sel) ? immediate : reg_rdata2;
+assign alu_operand1       = wb.reg_rdata1;
+assign alu_operand2       = (immediate_sel) ? execute_immediate : reg_rdata2;
 
 assign result_subs[32: 0]   = {alu_operand1[31], alu_operand1} - {alu_operand2[31], alu_operand2};
 assign result_subu[32: 0]   = {1'b0, alu_operand1} - {1'b0, alu_operand2};
-assign write_address              = alu_operand1 + immediate;
+assign write_address              = alu_operand1 + execute_immediate;
 
 assign branch_stall     = wb_branch_nxt || wb_branch;
 
@@ -78,32 +83,32 @@ begin
     next_pc      = fetch_pc + 4;
     branch_taken = !branch_stall;
         case(1'b1)
-        jal   : next_pc = pc + immediate;
-        jalr  : next_pc = alu_operand1 + immediate;
-        IF_ID.branch: begin
+        jal   : next_pc = pc + execute_immediate;
+        jalr  : next_pc = alu_operand1 + execute_immediate;
+        branch: begin
             case(alu_operation) 
                 BEQ : begin
-                            next_pc = (result_subs[32: 0] == 'd0) ? pc + immediate : fetch_pc + 4;
+                            next_pc = (result_subs[32: 0] == 'd0) ? pc + execute_immediate : fetch_pc + 4;
                             if (result_subs[32: 0] != 'd0) branch_taken = 1'b0;
                          end
                 BNE : begin
-                            next_pc = (result_subs[32: 0] != 'd0) ? pc + immediate : fetch_pc + 4;
+                            next_pc = (result_subs[32: 0] != 'd0) ? pc + execute_immediate : fetch_pc + 4;
                             if (result_subs[32: 0] == 'd0) branch_taken = 1'b0;
                          end
                 BLT : begin
-                            next_pc = result_subs[32] ? pc + immediate : fetch_pc + 4;
+                            next_pc = result_subs[32] ? pc + execute_immediate : fetch_pc + 4;
                             if (!result_subs[32]) branch_taken = 1'b0;
                          end
                 BGE : begin
-                            next_pc = !result_subs[32] ? pc + immediate : fetch_pc + 4;
+                            next_pc = !result_subs[32] ? pc + execute_immediate : fetch_pc + 4;
                             if (result_subs[32]) branch_taken = 1'b0;
                          end
                 BLTU: begin
-                            next_pc = result_subu[32] ? pc + immediate : fetch_pc + 4;
+                            next_pc = result_subu[32] ? pc + execute_immediate : fetch_pc + 4;
                             if (!result_subu[32]) branch_taken = 1'b0;
                          end
                 BGEU: begin
-                            next_pc = !result_subu[32] ? pc + immediate : fetch_pc + 4;
+                            next_pc = !result_subu[32] ? pc + execute_immediate : fetch_pc + 4;
                             if (result_subu[32]) branch_taken = 1'b0;
                          end
                 default: begin
@@ -130,7 +135,7 @@ begin
         mem_write:   result          = alu_operand2;
         jal:     result          = pc + 4;
         jalr:    result          = pc + 4;
-        lui:     result          = immediate;
+        lui:     result          = execute_immediate;
 
         alu:
             case(alu_operation)
@@ -168,7 +173,7 @@ begin
     begin
         fetch_pc <= RESET;
     end 
-    else if (!IF_ID.stall_read && !stall) begin
+    else if (!stall_read && !execute_stall) begin
         fetch_pc            <= (branch_stall) ? fetch_pc + 4 : next_pc;
     end
 end
@@ -185,7 +190,7 @@ always @(posedge clk or negedge reset) begin
         wb_mem_to_reg          <= 1'b0;
         wb_read_address            <= 2'h0;
         wb_alu_operation           <= 3'h0;
-    end else if (!stall && !IF_ID.stall_read) begin
+    end else if (!execute_stall && !stall_read) begin
         wb_result           <= result;
         wb_mem_write            <= mem_write && !branch_stall;
         wb_alu_to_reg          <= alu | lui | jal | jalr | mem_to_reg;
@@ -204,7 +209,9 @@ always @(posedge clk or negedge reset) begin
         wb_write_address            <= 32'h0;
         wb_write_byte            <= 4'h0;
         wb_write_data            <= 32'h0;
-    end else if (!stall && !IF_ID.stall_read && mem_write) begin
+    end else if (!execute_stall && !stall_read && mem_write) begin
+    //$display("time: %t , wb_dest_reg_sel=%d",$time, write_address);
+    //$display("time: %t , src1_select=%d",$time, wb.src1_select);
         wb_write_address            <= write_address;
         case(alu_operation)
             SB: begin

@@ -18,7 +18,12 @@ module IF_ID
     input                   inst_mem_is_valid,
     input           [31: 0] inst_mem_read_data,
     output                  inst_mem_is_ready,
-    output          [31: 0] inst_mem_address
+    output          [31: 0] inst_mem_address,
+    output                  stall_read,
+    output reg             [31: 0] inst_fetch_pc,
+
+    output reg                 branch,
+    output reg                 mem_write
 );
 
 `include "opcode.vh"
@@ -31,7 +36,7 @@ reg             [ 4: 0] src2_select;
 reg             [ 4: 0] dest_reg_sel;
 reg             [ 2: 0] alu_operation;
 reg                     arithsubtype;
-reg                     mem_write;
+//reg                     mem_write;
 reg                     mem_to_reg;
 reg                     illegal_inst;
 reg             [31: 0] execute_immediate;
@@ -39,12 +44,11 @@ reg                     alu;
 reg                     lui;
 reg                     jal;
 reg                     jalr;
-reg                     branch;
+//reg                     branch;
 reg                     stall_read;
 wire             [31:0] instruction;
-
 // pc wires
-reg             [31: 0] inst_fetch_pc;
+
 reg             [31: 0] pc;
 
 //stalls
@@ -52,14 +56,14 @@ wire                    inst_fetch_stall;
 reg                     flush;
 // Wire declarations end
 
-initial inst_fetch_pc = 0;
+//  initial inst_fetch_pc = 0;
 
 // reading the instructions and assigning them to instruction variable
 
 ////////////////////////////////////////////////////////////////
 // IF stage 
 ////////////////////////////////////////////////////////////////
-assign instruction                 = inst_mem_read_data;
+assign instruction                 = flush? NOP:inst_mem_read_data;
 
 // check for illegal instruction(instruction not in RV-32I architecture)
 
@@ -68,8 +72,8 @@ assign inst_fetch_stall = !inst_mem_is_valid;
 always @(posedge clk or negedge reset) begin
     if (!reset)
         exception           <= 1'b0;
-    // else if (illegal_inst || inst_mem_address[1:0] != 0)
-    //     exception           <= 1'b1;
+    else if (illegal_inst || inst_mem_address[1:0] != 0)
+        exception           <= 1'b1;
 end
 
 always @(posedge clk or negedge reset) begin
@@ -113,7 +117,7 @@ always @(posedge clk or negedge reset) begin
     // If reset of the system is performed, reset all the values. 
 
     if (!reset) begin
-        immediate              <= 32'h0;
+        execute_immediate      <= 32'h0;
         immediate_sel          <= 1'b0;
         alu                    <= 1'b0;
         jal                    <= 1'b0;
@@ -148,6 +152,7 @@ always @(posedge clk or negedge reset) begin
         mem_to_reg             <= instruction[`OPCODE] == LOAD;
         
     end
+    
 end
 
 endmodule
