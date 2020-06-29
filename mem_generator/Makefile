@@ -1,11 +1,11 @@
 #//////////////////////////////////////////////////////
 #/////////////////INCLUDING CROSS-COMPILER/////////////
 
-CC      = riscv32-unknown-elf-gcc
-AR      = riscv32-unknown-elf-ar
-OBJDUMP = riscv32-unknown-elf-objdump
-OBJCOPY = riscv32-unknown-elf-objcopy
-READELF = riscv32-unknown-elf-readelf
+CC      = riscv-none-embed-gcc
+AR      = riscv-none-embed-ar
+OBJDUMP = riscv-none-embed-objdump
+OBJCOPY = riscv-none-embed-objcopy
+READELF = riscv-none-embed-readelf
 
 
 #///// flags for RV32i architecture///////////////////
@@ -33,7 +33,7 @@ $(TARGET): $(SRC)
 	$(OBJCOPY) -O binary $(TARGET) ./imem_dmem/imem.bin
 	$(OBJCOPY) -j .data -O binary $(TARGET) ./imem_dmem/dmem.bin
 	$(OBJDUMP) -d $(TARGET) > ./imem_dmem/code.dis
-	cd imem_dmem && python3 bin2hex.py
+	cd imem_dmem && python bin2hex.py
 # /////clean function
 clean:
 	$(RM) $(TARGET) ./imem_dmem/imem.bin ./imem_dmem/imem.hex ./imem_dmem/dmem.bin ./imem_dmem/dmem.hex ./imem_dmem/code.dis
