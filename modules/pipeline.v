@@ -104,11 +104,11 @@ wire                    execute_stall;
 assign instruction                 = flush? NOP:inst_mem_read_data;
 ////////////////////////////////
 assign dmem_write_address           = wb_write_address;
-assign dmem_read_address           = alu_operand1 + execute_immediate;
-assign dmem_read_ready          = mem_to_reg;
-assign dmem_write_ready          = wb_mem_write;
-assign dmem_write_data           = wb_write_data;
-assign dmem_write_byte           = wb_write_byte;
+assign dmem_read_address            = alu_operand1 + execute_immediate;
+assign dmem_read_ready              = mem_to_reg;
+assign dmem_write_ready             = wb_mem_write;
+assign dmem_write_data              = wb_write_data;
+assign dmem_write_byte              = wb_write_byte;
 
 // check for illegal instruction(instruction not in RV-32I architecture)
 
@@ -117,6 +117,7 @@ assign inst_fetch_stall = !inst_mem_is_valid;
 always @(posedge clk or negedge reset) begin
     if (!reset)
         exception           <= 1'b0;
+        
     else if (illegal_inst || inst_mem_address[1:0] != 0)
         exception           <= 1'b1;
 end
@@ -305,12 +306,6 @@ begin
         default: result = 'hx;
     endcase
 end
-
-
-
-
-
-
 
 //Preparing output for writeback stage
 

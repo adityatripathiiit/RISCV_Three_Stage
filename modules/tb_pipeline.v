@@ -32,14 +32,12 @@ module testbench();
     wire                  mem_write;
 assign dmem_read_valid  = 1'b1;
 assign dmem_write_valid  = 1'b1;
-
+ 
 assign inst_mem_is_valid   = 1'b1;
 
 initial
 begin
-    //  $monitor("time: %t , inst_fetch_stall=%d",$time, IF_ID.inst_fetch_stall);
-     $monitor("time: %t , alu_operand2 =%d",$time, pipeline.alu_operand2);
-    //  $monitor("time: %t , inst_read_data=%h",$time, IF_ID.inst_mem_read_data);
+     $monitor("time: %t ,result =%d",$time,pipeline.regs[15] );
 end
 
 
@@ -65,6 +63,7 @@ always @(posedge clk or negedge reset) begin
     if (!reset) begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
+        pipeline.regs[2] <= 32'h00000fff;
     end else begin
         next_pc     <= inst_fetch_pc;
 
@@ -162,16 +161,17 @@ pipeline pipeline(
 //////////////////////////////////////////////////////////
 
 
-// check memory range
+//check memory range
 always @(posedge clk) begin
     if (inst_mem_is_ready && inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) begin
         $display("IMEM address %x out of range", inst_mem_address);
         #10 $finish(2);
     end
-    // if (dmem_write_ready && dmem_write_address[31:$clog2(DMEMSIZE+IMEMSIZE)] != 'd0) begin
-    //     $display("DMEM address %x out of range", dmem_write_address);
-    //     #10 $finish(2);
-    // end
+    if (dmem_write_ready  && dmem_write_address[31:$clog2(IMEMSIZE+DMEMSIZE)] != 'd0) begin
+        $display("DMEM address %x out of range", dmem_write_address);
+        #10 $finish(2);
+    end
 end
 
 endmodule
+
