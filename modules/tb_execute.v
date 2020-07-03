@@ -1,7 +1,5 @@
 // `include "opcode.vh"
 
-`define MEM_PUTC    32'h8000001c
-`define MEM_EXIT    32'h8000002c
 
 module testbench();
     localparam      IMEMSIZE = 128*1024;
