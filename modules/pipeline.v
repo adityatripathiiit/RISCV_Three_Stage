@@ -145,7 +145,7 @@ always @* begin
     illegal_inst                  = 1'b0;
     case(instruction[`OPCODE])
         JALR  : immediate      = {{20{instruction[31]}}, instruction[31:20]}; // I-Type 
-        BRANCH: immediate      = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0}; // B-type
+        BRANCH: immediate      = {{20{instruction[31]}}, instruction[8], instruction[30:25], instruction[11:9], 1'b0}; // B-type
         LOAD  : immediate      = {{20{instruction[31]}}, instruction[31:20]}; // I-type
         STORE : immediate      = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]}; // S-type
         ARITHI: immediate      = (instruction[`FUNC3] == SLL || instruction[`FUNC3] == SR) ? {27'h0, instruction[24:20]} : {{20{instruction[31]}}, instruction[31:20]}; // I-type
@@ -210,7 +210,7 @@ end
 
 
     
-assign execute_stall             = (inst_fetch_stall) || (mem_to_reg && !dmem_read_valid);
+assign execute_stall             = (inst_fetch_stall) || (mem_to_reg);
 
 assign alu_operand1       = reg_rdata1;
 assign alu_operand2       = (immediate_sel) ? execute_immediate : reg_rdata2;
@@ -219,7 +219,7 @@ assign result_subs[32: 0]   = {alu_operand1[31], alu_operand1} - {alu_operand2[3
 assign result_subu[32: 0]   = {1'b0, alu_operand1} - {1'b0, alu_operand2};
 assign write_address              = alu_operand1 + execute_immediate;
 
-assign branch_stall     = wb_branch_nxt || wb_branch;
+assign branch_stall     = wb_branch;
 
 
 //Calculating next pc value
@@ -236,28 +236,28 @@ begin
         branch: begin
             case(alu_operation) 
                 BEQ : begin
-                            next_pc = (result_subs[32: 0] == 'd0) ? pc + execute_immediate : fetch_pc + 4;
-                            if (result_subs[32: 0] != 'd0) branch_taken = 1'b0;
+                            next_pc = (result_subs[31: 0] == 'd0) ? pc + execute_immediate : fetch_pc + 4;
+                            if (result_subs[31: 0] != 'd0) branch_taken = 1'b0;
                          end
                 BNE : begin
-                            next_pc = (result_subs[32: 0] != 'd0) ? pc + execute_immediate : fetch_pc + 4;
-                            if (result_subs[32: 0] == 'd0) branch_taken = 1'b0;
+                            next_pc = (result_subs[31: 0] != 'd0) ? pc + execute_immediate : fetch_pc + 4;
+                            if (result_subs[31: 0] == 'd0) branch_taken = 1'b0;
                          end
                 BLT : begin
-                            next_pc = result_subs[32] ? pc + execute_immediate : fetch_pc + 4;
-                            if (!result_subs[32]) branch_taken = 1'b0;
+                            next_pc = result_subs[31] ? pc + execute_immediate : fetch_pc + 4;
+                            if (!result_subs[31]) branch_taken = 1'b0;
                          end
                 BGE : begin
-                            next_pc = !result_subs[32] ? pc + execute_immediate : fetch_pc + 4;
-                            if (result_subs[32]) branch_taken = 1'b0;
+                            next_pc = result_subs[31] ?  fetch_pc + 4 : pc + execute_immediate;
+                            if (!result_subs[31]) branch_taken = 1'b0;
                          end
                 BLTU: begin
-                            next_pc = result_subu[32] ? pc + execute_immediate : fetch_pc + 4;
-                            if (!result_subu[32]) branch_taken = 1'b0;
+                            next_pc = result_subu[31] ? pc + execute_immediate : fetch_pc + 4;
+                            if (!result_subu[31]) branch_taken = 1'b0;
                          end
                 BGEU: begin
-                            next_pc = !result_subu[32] ? pc + execute_immediate : fetch_pc + 4;
-                            if (result_subu[32]) branch_taken = 1'b0;
+                            next_pc = !result_subu[31] ? pc + execute_immediate : fetch_pc + 4;
+                            if (result_subu[31]) branch_taken = 1'b0;
                          end
                 default: begin
                          next_pc    = fetch_pc;

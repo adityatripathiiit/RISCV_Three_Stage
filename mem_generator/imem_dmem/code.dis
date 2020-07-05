@@ -10,7 +10,7 @@ Disassembly of section .text:
    8:	02010413          	addi	s0,sp,32
    c:	00010513          	mv	a0,sp
   10:	00050e13          	mv	t3,a0
-  14:	06400513          	li	a0,100
+  14:	00500513          	li	a0,5
   18:	fea42423          	sw	a0,-24(s0)
   1c:	fe842503          	lw	a0,-24(s0)
   20:	00150513          	addi	a0,a0,1
