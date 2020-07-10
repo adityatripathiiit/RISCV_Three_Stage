@@ -17,32 +17,20 @@ module IF_ID
     
     );
 
+//////////////// Including OPCODES ////////////////////////////
 `include "opcode.vh"
-// General wires  (for passing opcode and other values to ALU)
 
-
-// Wire declarations end
-
-
-// reading the instructions and assigning them to instruction variable
 
 ////////////////////////////////////////////////////////////////
-// IF stage 
+// IF stage Start
 ////////////////////////////////////////////////////////////////
-assign pipe.instruction                 = pipe.flush? NOP:inst_mem_read_data;
-////////////////////////////////
-assign pipe.dmem_write_address           = pipe.wb_write_address;
-assign pipe.dmem_read_address            = pipe.alu_operand1 + pipe.execute_immediate;
-assign pipe.dmem_read_ready              = pipe.mem_to_reg;
-assign pipe.dmem_write_ready             = pipe.wb_mem_write;
-assign pipe.dmem_write_data              = pipe.wb_write_data;
-assign pipe.dmem_write_byte              = pipe.wb_write_byte;
+assign pipe.instruction                 = pipe.stall_read? NOP:inst_mem_read_data;
+
 
 // check for illegal instruction(instruction not in RV-32I architecture)
 
-assign pipe.inst_fetch_stall = !inst_mem_is_valid;
-
-always @(posedge clk or negedge reset) begin
+always @(posedge clk or negedge reset) 
+begin
     if (!reset)
         exception           <= 1'b0;
         
@@ -50,13 +38,17 @@ always @(posedge clk or negedge reset) begin
         exception           <= 1'b1;
 end
 
-always @(posedge clk or negedge reset) begin
-    if (!reset) begin
+
+// Stall read assignment for stalling while reading 
+
+always @(posedge clk or negedge reset) 
+begin
+    if (!reset) 
+    begin
         pipe.stall_read             <= 1'b1;
-        pipe.flush               <= 1'b1;
-    end else begin
+    end else 
+    begin
         pipe.stall_read             <= stall;
-        pipe.flush               <= pipe.stall_read;
     end
 end
 
@@ -68,7 +60,8 @@ end
 // ID stage 
 ////////////////////////////////////////////////////////////////
 
-always @* begin
+always @* 
+begin
     pipe.immediate                     = 32'h0;
     pipe.illegal_inst                  = 1'b0;
     case(pipe.instruction[`OPCODE])
@@ -86,11 +79,13 @@ always @* begin
     endcase
 end
 
-always @(posedge clk or negedge reset) begin
+always @(posedge clk or negedge reset) 
+begin
 
     // If reset of the system is performed, reset all the values. 
 
-    if (!reset) begin
+    if (!reset) 
+    begin
         pipe.execute_immediate      <= 32'h0;
         pipe.immediate_sel          <= 1'b0;
         pipe.alu                    <= 1'b0;
@@ -105,13 +100,13 @@ always @(posedge clk or negedge reset) begin
         pipe.arithsubtype           <= 1'b0;
         pipe.mem_write              <= 1'b0;
         pipe.mem_to_reg             <= 1'b0;
-    end else if(!pipe.stall_read && !pipe.inst_fetch_stall) begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
+    end 
+    else if(!pipe.stall_read) 
+    begin                      // else take the values from the IF stage and decode it to pass values to corresponding wires
         pipe.execute_immediate      <= pipe.immediate;
-        pipe.immediate_sel          <= (pipe.instruction[`OPCODE] == JALR  ) ||
-                               (pipe.instruction[`OPCODE] == LOAD  ) ||
-                               (pipe.instruction[`OPCODE] == ARITHI);
-        pipe.alu                    <= (pipe.instruction[`OPCODE] == ARITHI) ||
-                               (pipe.instruction[`OPCODE] == ARITHR);
+        pipe.immediate_sel          <= (pipe.instruction[`OPCODE] == JALR  ) || (pipe.instruction[`OPCODE] == LOAD  ) ||
+                                        (pipe.instruction[`OPCODE] == ARITHI);
+        pipe.alu                    <= (pipe.instruction[`OPCODE] == ARITHI) || (pipe.instruction[`OPCODE] == ARITHR);
         pipe.lui                    <= pipe.instruction[`OPCODE] == LUI;
         pipe.jal                    <= pipe.instruction[`OPCODE] == JAL;
         pipe.jalr                   <= pipe.instruction[`OPCODE] == JALR;
@@ -128,4 +123,40 @@ always @(posedge clk or negedge reset) begin
     end
     
 end
+
+
+
+// Data forwarding and storing data in respective registers depending on conditions of write stalls, and other conditions 
+
+assign pipe.reg_rdata1[31: 0] = (pipe.src1_select == 5'h0) ? 32'h0 :
+                        (!pipe.wb_stall && pipe.wb_alu_to_reg && (pipe.wb_dest_reg_sel == pipe.src1_select)) ? (pipe.wb_mem_to_reg ? pipe.wb_read_data : pipe.wb_result) :
+                        pipe.regs[pipe.src1_select];
+assign pipe.reg_rdata2[31: 0] = (pipe.src2_select == 5'h0) ? 32'h0 :
+                        (!pipe.wb_stall && pipe.wb_alu_to_reg && (pipe.wb_dest_reg_sel == pipe.src2_select)) ? (pipe.wb_mem_to_reg ? pipe.wb_read_data : pipe.wb_result) :
+                        pipe.regs[pipe.src2_select];
+
+
+////////////////////////////////////////////////////////////
+// Register file
+////////////////////////////////////////////////////////////
+
+integer i;
+always @(posedge clk or negedge reset) 
+begin
+    if (!reset) 
+    begin
+        for(i = 1; i < 32; i=i+1) 
+        begin
+            pipe.regs[i] <= 32'h0;
+        end
+    end 
+    else if (pipe.wb_alu_to_reg && !pipe.stall_read && !(pipe.wb_stall)) 
+    begin
+        pipe.regs[pipe.wb_dest_reg_sel]    <= pipe.wb_mem_to_reg ? pipe.wb_read_data : pipe.wb_result;
+    end
+end
+
+
+
+
 endmodule

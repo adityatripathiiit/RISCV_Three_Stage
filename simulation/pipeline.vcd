@@ -27,7 +27,7 @@ $var wire 32 / inst_mem_read_data [31:0] $end
 $var wire 1 0 reset $end
 $var wire 1 1 stall $end
 $var wire 1 2 temp $end
-$var wire 1 3 wb_nop_stall $end
+$var wire 1 3 wb_stall_first_stall $end
 $var wire 1 4 wb_stall $end
 $var wire 32 5 write_address [31:0] $end
 $var wire 33 6 result_subu [32:0] $end
@@ -71,8 +71,8 @@ $var reg 1 [ wb_branch_nxt $end
 $var reg 5 \ wb_dest_reg_sel [4:0] $end
 $var reg 1 ] wb_mem_to_reg $end
 $var reg 1 ^ wb_mem_write $end
-$var reg 1 _ wb_nop $end
-$var reg 1 ` wb_nop_more $end
+$var reg 1 _ wb_stall_first $end
+$var reg 1 ` wb_stall_first_more $end
 $var reg 2 a wb_read_address [1:0] $end
 $var reg 32 b wb_read_data [31:0] $end
 $var reg 32 c wb_result [31:0] $end

@@ -1,11 +1,10 @@
-// `include "opcode.vh"
-
 module testbench();
     
+    //Local Parameters
     localparam      IMEMSIZE = 128*1024;
     localparam      DMEMSIZE = 128*1024;
 
-    // pc counter and checker
+    // PC counter and checker
     reg     [31: 0] next_pc;
     reg     [ 7: 0] count;
 
@@ -20,8 +19,8 @@ module testbench();
     wire    [31: 0] dmem_read_data_temp;
     
 
-assign dmem_write_valid  = 1'b1;
-assign dmem_read_valid = 1'b1; 
+assign dmem_write_valid    = 1'b1;
+assign dmem_read_valid     = 1'b1; 
 assign inst_mem_is_valid   = 1'b1;
 
 
@@ -43,6 +42,7 @@ begin
     clk            <= 1'b1;
     reset          <= 1'b0;
     stall          <= 1'b1;
+
     repeat (10) @(posedge clk);
     reset          <= 1'b1;
 
@@ -55,20 +55,24 @@ always #10 clk      <= ~clk;
 
 
 // check timeout if the PC do not change anymore
-always @(posedge clk or negedge reset) begin
-    if (!reset) begin
+always @(posedge clk or negedge reset) 
+begin
+    if (!reset) 
+    begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
         pipe.regs[2] <= 32'h00000fff;
-    end else begin
+    end 
+    else 
+    begin
         next_pc     <= pipe.inst_fetch_pc;
 
         if (next_pc == pipe.inst_fetch_pc)
             count   <= count + 1;
         else
             count   <= 8'h0;
-
-        if (count > 100) begin
+        if (count > 100) 
+        begin
             $display("Executing timeout");
             #10 $finish(2);
         end
@@ -76,24 +80,23 @@ always @(posedge clk or negedge reset) begin
 end
 
 // stop at exception
-always @(posedge clk) begin
-    if (exception) begin
+always @(posedge clk) 
+begin
+    if (exception) 
+    begin
         $display("All instructions are Fetched");
         #10 $finish(2);
     end
 end
 
-// Instantiating the modules
-
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Data memory
-//////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
     memory # (
         .SIZE(DMEMSIZE),
         .FILE("../mem_generator/imem_dmem/dmem.hex")
     ) dmem (
         .clk   (clk),
-
         .read_ready(pipe.dmem_read_ready),
         .write_ready(pipe.dmem_write_ready),
         .read_data (dmem_read_data_temp),
@@ -103,12 +106,9 @@ end
         .write_byte (pipe.dmem_write_byte)
     );
 
-
-
 ///////////////////////////////////////////////////////////
 /////// Instanatiate Instruction memory
-//////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////
 
     memory # (
         .SIZE(IMEMSIZE),
@@ -125,9 +125,8 @@ end
         .write_byte (4'h0)
     );
 
-
 ///////////////////////////////////////////////////////////
-/////// Instanatiate IF/ID stage
+/////// Instanatiate Pipeline Module
 //////////////////////////////////////////////////////////
 
 pipe pipe(
@@ -140,24 +139,18 @@ pipe pipe(
     .dmem_read_data_temp(dmem_read_data_temp),
     .dmem_write_valid(dmem_write_valid),
     .dmem_read_valid(dmem_read_valid)
-   
-   
 );
 
-
-
-///////////////////////////////////////////////////////////
-/////// Instanatiate Write Back stage
-//////////////////////////////////////////////////////////
-
-
 //check memory range
-always @(posedge clk) begin
-    if (pipe.inst_mem_is_ready && pipe.inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) begin
+always @(posedge clk) 
+begin
+    if (pipe.inst_mem_is_ready && pipe.inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) 
+    begin
         $display("IMEM address %x out of range", pipe.inst_mem_address);
         #10 $finish(2);
     end
-    if (pipe.dmem_write_ready  && pipe.dmem_write_address[31:$clog2(IMEMSIZE+DMEMSIZE)] != 'd0) begin
+    if (pipe.dmem_write_ready  && pipe.dmem_write_address[31:$clog2(DMEMSIZE)] != 'd0) 
+    begin
         $display("DMEM address %x out of range", pipe.dmem_write_address);
         #10 $finish(2);
     end

@@ -1,4 +1,4 @@
 +incdir+../modules
-../modules/pipe.v
+../modules/pipeline.v
 ../modules/tb_pipeline.v
 ../modules/memory.v
