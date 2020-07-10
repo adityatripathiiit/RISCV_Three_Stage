@@ -1,4 +1,4 @@
-
+`timescale 1ns/100fs 
 module testbench();
     localparam      IMEMSIZE = 128*1024;
 
@@ -17,7 +17,9 @@ module testbench();
 
 
 initial
-      $monitor("inst=%h",inst_mem_read_data);
+
+      $monitor("time= %t , alu_operation=%h",$time, IF_ID.alu_operation);
+
 
 
 initial 

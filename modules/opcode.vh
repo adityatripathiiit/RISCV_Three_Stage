@@ -52,3 +52,4 @@ localparam  [ 2: 0] ADD     = 3'b000,    // inst[30] == 0: ADD, inst[31] == 1: S
                     OR      = 3'b110,
                     AND     = 3'b111;
 
+
