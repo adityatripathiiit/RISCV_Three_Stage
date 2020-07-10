@@ -8,7 +8,8 @@ all: $(TARGET)
 
 $(TARGET): $(SRC)
 	iverilog $(BFLAGS) -o $(TARGET)
-	vvp riscv_output
+	vvp $(TARGET)
+	gtkwave pipeline.vcd
 	make clean
 run: $(TARGET)
 	./$(TARGET)

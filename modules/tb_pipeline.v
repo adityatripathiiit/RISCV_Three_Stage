@@ -1,6 +1,7 @@
 // `include "opcode.vh"
 
 module testbench();
+    
     localparam      IMEMSIZE = 128*1024;
     localparam      DMEMSIZE = 128*1024;
 
@@ -12,32 +13,27 @@ module testbench();
     reg             reset;
     reg             stall;
     wire            exception;
-    wire            inst_mem_is_ready;
     wire    [31: 0] inst_mem_read_data;
     wire            inst_mem_is_valid;
-    wire    [31: 0] inst_mem_address;
-
-    wire            dmem_read_ready;
-    wire            dmem_write_ready;
-    wire    [31: 0] dmem_read_data;
-    wire            dmem_read_valid;
     wire            dmem_write_valid;
-    wire    [31: 0] dmem_read_address;
-    wire    [31: 0] dmem_write_address;
-    wire    [31: 0] dmem_write_data;
-    wire    [ 3: 0] dmem_write_byte;
-    wire            stall_read;
-    wire     [31: 0] inst_fetch_pc;
-    wire                  branch;
-    wire                  mem_write;
-assign dmem_read_valid  = 1'b1;
+    wire            dmem_read_valid;
+    wire    [31: 0] dmem_read_data_temp;
+    
+
 assign dmem_write_valid  = 1'b1;
- 
+assign dmem_read_valid = 1'b1; 
 assign inst_mem_is_valid   = 1'b1;
+
 
 initial
 begin
-     $monitor("time: %t ,result =%d",$time,pipeline.regs[15] );
+     $monitor("time: %t ,result =%d",$time,pipe.regs[15]);
+end
+
+initial
+begin
+    $dumpfile("pipeline.vcd");
+    $dumpvars(0,pipe);
 end
 
 
@@ -63,11 +59,11 @@ always @(posedge clk or negedge reset) begin
     if (!reset) begin
         next_pc     <= 32'h0;
         count       <= 8'h0;
-        pipeline.regs[2] <= 32'h00000fff;
+        pipe.regs[2] <= 32'h00000fff;
     end else begin
-        next_pc     <= inst_fetch_pc;
+        next_pc     <= pipe.inst_fetch_pc;
 
-        if (next_pc == inst_fetch_pc)
+        if (next_pc == pipe.inst_fetch_pc)
             count   <= count + 1;
         else
             count   <= 8'h0;
@@ -98,13 +94,13 @@ end
     ) dmem (
         .clk   (clk),
 
-        .read_ready(dmem_read_ready),
-        .write_ready(dmem_write_ready),
-        .read_data (dmem_read_data),
-        .read_address (dmem_read_address[31:2]),
-        .write_address (dmem_write_address[31:2]),
-        .write_data (dmem_write_data),
-        .write_byte (dmem_write_byte)
+        .read_ready(pipe.dmem_read_ready),
+        .write_ready(pipe.dmem_write_ready),
+        .read_data (dmem_read_data_temp),
+        .read_address (pipe.dmem_read_address[31:2]),
+        .write_address (pipe.dmem_write_address[31:2]),
+        .write_data (pipe.dmem_write_data),
+        .write_byte (pipe.dmem_write_byte)
     );
 
 
@@ -120,10 +116,10 @@ end
         
     ) inst_mem (
         .clk   (clk),
-        .read_ready(inst_mem_is_ready),
+        .read_ready(1'b1),
         .write_ready(1'b0),
         .read_data (inst_mem_read_data),
-        .read_address (inst_mem_address[31:2]),
+        .read_address (pipe.inst_mem_address[31:2]),
         .write_address (30'h0),
         .write_data (32'h0),
         .write_byte (4'h0)
@@ -134,24 +130,18 @@ end
 /////// Instanatiate IF/ID stage
 //////////////////////////////////////////////////////////
 
-pipeline pipeline(
+pipe pipe(
     .clk        (clk),
     .reset     (reset),
     .stall      (stall),
     .exception  (exception),
-    .inst_mem_is_ready (inst_mem_is_ready),
     .inst_mem_read_data (inst_mem_read_data),
     .inst_mem_is_valid (inst_mem_is_valid),
-    .inst_mem_address  (inst_mem_address),
-    .dmem_write_ready(dmem_write_ready),
-    .dmem_read_ready(dmem_read_ready),
-    .dmem_read_data(dmem_read_data),
+    .dmem_read_data_temp(dmem_read_data_temp),
     .dmem_write_valid(dmem_write_valid),
-    .dmem_read_valid(dmem_read_valid),
-    .dmem_write_address(dmem_write_address),
-    .dmem_read_address(dmem_read_address),
-    .dmem_write_data(dmem_write_data),
-    .dmem_write_byte(dmem_write_byte)
+    .dmem_read_valid(dmem_read_valid)
+   
+   
 );
 
 
@@ -163,12 +153,12 @@ pipeline pipeline(
 
 //check memory range
 always @(posedge clk) begin
-    if (inst_mem_is_ready && inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) begin
-        $display("IMEM address %x out of range", inst_mem_address);
+    if (pipe.inst_mem_is_ready && pipe.inst_mem_address[31:$clog2(IMEMSIZE)] != 'd0) begin
+        $display("IMEM address %x out of range", pipe.inst_mem_address);
         #10 $finish(2);
     end
-    if (dmem_write_ready  && dmem_write_address[31:$clog2(IMEMSIZE+DMEMSIZE)] != 'd0) begin
-        $display("DMEM address %x out of range", dmem_write_address);
+    if (pipe.dmem_write_ready  && pipe.dmem_write_address[31:$clog2(IMEMSIZE+DMEMSIZE)] != 'd0) begin
+        $display("DMEM address %x out of range", pipe.dmem_write_address);
         #10 $finish(2);
     end
 end
