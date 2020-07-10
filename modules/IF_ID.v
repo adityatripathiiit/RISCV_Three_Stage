@@ -135,4 +135,3 @@ always @(posedge clk or negedge reset) begin
 end
 
 endmodule
-

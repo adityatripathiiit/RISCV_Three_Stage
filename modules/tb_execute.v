@@ -1,4 +1,6 @@
-`timescale 1ns/100fs 
+// `include "opcode.vh"
+
+
 module testbench();
     localparam      IMEMSIZE = 128*1024;
 
@@ -16,10 +18,12 @@ module testbench();
     wire    [31: 0] inst_mem_addr;
 
 
+assign inst_mem_is_valid   = 1'b1;
+
 initial
-
-      $monitor("time= %t , alu_operation=%h",$time, IF_ID.alu_operation);
-
+begin
+     $monitor("result=%d",execute.immediate);
+end
 
 
 initial 
@@ -64,15 +68,11 @@ always @(posedge clk) begin
     end
 end
 
-IF_ID IF_ID(
-    .clk        (clk),
-    .reset     (reset),
-    .exception  (exception),
-    .inst_mem_is_ready (inst_mem_is_ready),
-    .inst_mem_read_data (inst_mem_read_data),
-    .inst_mem_is_valid (inst_mem_is_valid),
-    .inst_mem_addr  (inst_mem_addr)
-);
+// Instantiating the modules and
+
+///////////////////////////////////////////////////////////
+/////// Instanatiate Instruction memory
+//////////////////////////////////////////////////////////
 
 
     memory # (
@@ -90,6 +90,42 @@ IF_ID IF_ID(
         .write_byte (4'h0)
     );
 
+///////////////////////////////////////////////////////////
+/////// Instanatiate IF/ID stage
+//////////////////////////////////////////////////////////
+
+IF_ID IF_ID(
+    .clk        (clk),
+    .reset     (reset),
+    .exception  (exception),
+    .inst_mem_is_ready (inst_mem_is_ready),
+    .inst_mem_read_data (inst_mem_read_data),
+    .inst_mem_is_valid (inst_mem_is_valid),
+    .inst_mem_addr  (inst_mem_addr)
+);
+
+///////////////////////////////////////////////////////////
+/////// Instanatiate Execute stage
+//////////////////////////////////////////////////////////
+execute execute(
+    .clk        (clk),
+    .reset     (reset),
+    //.dmem_rdata(dmem_rdata),
+    .immediate_sel(IF_ID.immediate_sel),
+    .immediate(IF_ID.immediate),
+    .mem_write(IF_ID.mem_write),
+    .mem_to_reg(IF_ID.mem_to_reg),
+    .jal(IF_ID.jal),
+    .jalr(IF_ID.jalr),
+    .lui(IF_ID.lui),
+    .alu(IF_ID.alu),
+    .alu_operation(IF_ID.alu_operation),
+    .arithsubtype(IF_ID.arithsubtype),
+    .pc(IF_ID.pc),
+    .dest_reg_sel(IF_ID.dest_reg_sel)
+   );
+
+
 
 
 // check memory range
@@ -101,5 +137,3 @@ always @(posedge clk) begin
 end
 
 endmodule
-
-
