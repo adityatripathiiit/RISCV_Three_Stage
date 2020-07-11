@@ -47,6 +47,48 @@ begin
     end
 end
 
+
+//Preparing write data for store type instructions
+
+always @(posedge clk or negedge reset) 
+begin
+    if (!reset) 
+    begin
+        pipe.wb_write_address         <= 32'h0;
+        pipe.wb_write_byte            <= 4'h0;
+        pipe.wb_write_data            <= 32'h0;
+    end 
+    else if (!pipe.stall_read && pipe.mem_write) 
+    begin
+        pipe.wb_write_address         <= pipe.write_address;
+        case(pipe.alu_operation)
+            SB: begin
+                pipe.wb_write_data    <= {4{pipe.alu_operand2[7:0]}};
+                case(pipe.write_address[1:0])
+                    2'b00:  pipe.wb_write_byte <= 4'b0001;
+                    2'b01:  pipe.wb_write_byte <= 4'b0010;
+                    2'b10:  pipe.wb_write_byte <= 4'b0100;
+                    default:pipe.wb_write_byte <= 4'b1000;
+                endcase
+            end
+            SH: begin
+                pipe.wb_write_data    <= {2{pipe.alu_operand2[15:0]}};
+                pipe.wb_write_byte    <= pipe.write_address[1] ? 4'b1100 : 4'b0011;
+            end
+            SW: begin
+                pipe.wb_write_data    <= pipe.alu_operand2;
+                pipe.wb_write_byte    <= 4'hf;
+            end
+            default: begin
+                pipe.wb_write_data    <= 32'hx;
+                pipe.wb_write_byte    <= 4'hx;
+            end
+        endcase
+    end
+end
+
+
+
 always @* 
 begin
     // load instruction based on the OPCODES
