@@ -75,6 +75,7 @@ Install RV32I toolchains.
     make negative         simulates the C code for negative number addition
     make fibonacci        simulates the C code for fibonacci series
     make shifting         simulates the C code for shifting of number
+    make xor              simulates the C code for xor
     make clean            clean
 
 - **After this step, a pipeline.vcd file will be generated** 
@@ -143,6 +144,15 @@ When the branch is taken during the execute stage, it needs to stall the instruc
 **Waveform for all the wires**
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/wave.png" alt="wave" >
+
+## 
+
+###
+
+## Supported Instruction Set Architecture
+
+<img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/design docs/supported_instruction_set.jpg" alt="ISA" >
+
 
 
 ## Memory Interface

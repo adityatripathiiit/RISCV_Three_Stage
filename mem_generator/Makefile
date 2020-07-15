@@ -18,6 +18,7 @@ SRC_FIBONACCI     = code_fibonacci.c
 SRC_SORT     = code_sort.c
 SRC_SHIFTING = code_shifting.c
 SRC_NEGATIVE = code_negative.c
+SRC_XOR = code_xor.c
 
 TARGET   = code.elf
 
@@ -57,6 +58,13 @@ shifting: $(SRC_SHIFTING)
 
 negative: $(SRC_NEGATIVE)
 	$(CC) -c  $(SRC_NEGATIVE) -o $(TARGET) $(CFLAGS)
+	$(OBJCOPY) -O binary $(TARGET) ./imem_dmem/imem.bin
+	$(OBJCOPY) -j .data -O binary $(TARGET) ./imem_dmem/dmem.bin
+	$(OBJDUMP) -d $(TARGET) > ./imem_dmem/code.dis
+	cd imem_dmem && python bin2hex.py
+
+xor: $(SRC_XOR)
+	$(CC) -c  $(SRC_XOR) -o $(TARGET) $(CFLAGS)
 	$(OBJCOPY) -O binary $(TARGET) ./imem_dmem/imem.bin
 	$(OBJCOPY) -j .data -O binary $(TARGET) ./imem_dmem/dmem.bin
 	$(OBJDUMP) -d $(TARGET) > ./imem_dmem/code.dis
