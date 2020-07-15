@@ -1,8 +1,8 @@
 module testbench();
     
     //Local Parameters
-    localparam      IMEMSIZE = 128*1024;
-    localparam      DMEMSIZE = 128*1024;
+    localparam      IMEMSIZE = 4096;
+    localparam      DMEMSIZE = 4096;
 
     // PC counter and checker
     reg     [31: 0] next_pc;

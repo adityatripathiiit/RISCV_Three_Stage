@@ -1,6 +1,6 @@
 import struct
 MEMINIT = 1
-RAMSIZE = 128*1024
+RAMSIZE = 4096
 
 def hexChange(string):
     string = string[2:]
