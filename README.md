@@ -31,20 +31,20 @@ Install RV32I toolchains.
 
 
 ## Building Toolchains For Windows
-We will install the xPack GNU RISC-V Embedded GCC binaries for windows using NPM and XPM. 
-    # Windows packages needed:
-        * Install npm from here https://www.npmjs.com/get-npm
-        * npm i xpm
-        * xpm install --global @xpack-dev-tools/riscv-none-embed-gcc@latest
-        
+    We will install the xPack GNU RISC-V Embedded GCC binaries for windows using NPM and XPM. 
+        # Windows packages needed:
+        - Install npm from here https://www.npmjs.com/get-npm
+        - npm i xpm
+        - xpm install --global @xpack-dev-tools/riscv-none-embed-gcc@latest
+            
     After installing the xPack GNU toolchain, add the tool chain to the path. 
     The tool chain can be found at the following path 
       C:\Users\ilg\AppData\Roaming\xPacks\GNU RISC-V Embedded GCC\8.2.1-3.1\bin
     
     
-You are good to go ! Just test if the toolchains are build or not by crosscompiling any c code. 
-For windows, just run {riscv-none-embed-gcc} in the terminal, to check if the toolchanins are installed. 
-For linux, run riscv-unknown32-elf-gcc 
+- You are good to go ! Just test if the toolchains are build or not by crosscompiling any c code. 
+- For windows, just run riscv-none-embed-gcc in the terminal, to check if the toolchanins are installed. 
+- For linux, run riscv-unknown32-elf-gcc 
 
 ## Files list
 
@@ -104,14 +104,14 @@ For linux, run riscv-unknown32-elf-gcc
 ![alt text](https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/pipeline_overview.png)
 ![alt text](https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/stages_function.png)
 
-* Register Forwarding
+** Register Forwarding **
 
 When the data value of a register is calculated in a previous instruction and the updated value is used for the next instruction, the problem of data hazard occurs. To overcome this the updated register value is directly transfered from the writeback stage to execute stage.
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/data_forwarding.png" alt="Register Forwarding"> 
 
 
-* Branch Penalty
+** Branch Penalty **
 
 When the branch is taken during the execute stage, it needs to stall the instructions that have been fetched into the pipeline, which causes a delay/stall of two instructions, so the extra cost of the branch is two.
 
@@ -119,29 +119,29 @@ When the branch is taken during the execute stage, it needs to stall the instruc
 
 ## C codes used for testing the pipeline
 
-** Fibonacci Sequence
+** Fibonacci Sequence **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/fibonacci_test.png" alt="Fibonacci Sequence">
 
-** Sorting an array
+** Sorting an array **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/sorting_test.png" alt="Sorting" >
 
-* Addition of two numbers
+** Addition of two numbers **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/addition_test.png" alt="Addition">
 
 
-** Shifting
+** Shifting **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/shifting_test.png" alt="Shifting">
 
-** Negative integers
+** Negative integers **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/negative_test.png" alt="Shifting" >
 
 
-** Waveform for all the wires
+** Waveform for all the wires **
 
 <img src="https://github.com/adityatripathiiit/RISCV_Three_Stage/blob/master/screenshots/wave.png" alt="wave" >
 
