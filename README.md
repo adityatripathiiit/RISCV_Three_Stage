@@ -151,10 +151,6 @@ There is a single memory module for both instruction and data memory. Instructio
 
 ## Known issues
 
-* An ideal memory has been assumed for this project, i.e. the instruction and data memory are always read ready.
+* An ideal memory has been assumed for this project, i.e. the instruction and data memory are always read/write valid.
 * Branch instructions have two stalls which can be reduced to one, to optimise the functioning.
 * No overflow handling in ALU operations
-
-# License
-
-MIT license
